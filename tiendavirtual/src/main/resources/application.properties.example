@@ -1,0 +1,21 @@
+spring.application.name=tiendavirtual
+
+# Configuracion de Base de Datos
+spring.datasource.url=jdbc:mysql://localhost:3306/tienda_virtual?useSSL=false&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=TU_PASSWORD_AQUI
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+# Configuracion de Spring Mail
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=TU_CORREO@gmail.com
+spring.mail.password=TU_CLAVE_DE_APLICACION_AQUI
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# Configuracion de Mercado Pago
+mercadopago.access.token=TU_ACCESS_TOKEN_DE_MERCADO_PAGO
+mercado.pago.webhook.url=TU_URL_DE_NGROK
