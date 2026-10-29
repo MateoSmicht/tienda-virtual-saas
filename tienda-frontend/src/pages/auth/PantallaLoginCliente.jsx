@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode";
+import { API_URL } from '../../services/api';
 
 export const PantallaLoginCliente = () => {
     const navigate = useNavigate();
@@ -24,7 +25,7 @@ export const PantallaLoginCliente = () => {
 
         try {
             if (isLogin) {
-                const response = await fetch('http://localhost:8080/api/auth/login', {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -55,7 +56,7 @@ export const PantallaLoginCliente = () => {
                 }
 
             } else {
-                const response = await fetch('http://localhost:8080/api/register', {
+                const response = await fetch(`${API_URL}/api/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombre, apellido, email, password, telefono }) 

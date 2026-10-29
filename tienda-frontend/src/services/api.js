@@ -1,4 +1,6 @@
 
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
 export const fetchConToken = async (endpoint, opciones = {}) => {
   const token = localStorage.getItem('token');
   
@@ -11,8 +13,7 @@ export const fetchConToken = async (endpoint, opciones = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // Si tu backend está en el puerto 8080, asegurate de que la URL base esté acá
-  const urlCompleta = `http://localhost:8080/api${endpoint}`;
+  const urlCompleta = `${API_URL}/api${endpoint}`;
 
   return fetch(urlCompleta, {
     ...opciones,
