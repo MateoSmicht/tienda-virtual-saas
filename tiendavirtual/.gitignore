@@ -32,6 +32,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-### Seguridad / Configuración Local  ###
-src/main/resources/application.properties
