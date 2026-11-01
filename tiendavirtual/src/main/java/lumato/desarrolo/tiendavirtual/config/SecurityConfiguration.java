@@ -86,8 +86,12 @@ public class SecurityConfiguration {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000","http://vperfumery.localhost:5173",
-                "http://vperfumery.localhost:3000"));
+        //configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000","http://vperfumery.localhost:5173",
+          //      "http://vperfumery.localhost:3000"));
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "https://*.onrender.com" // Esto permite automáticamente cualquier subdominio en Render (ej: *.tienda-frontend-hocm.onrender.com o el dominio final que uses)
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
