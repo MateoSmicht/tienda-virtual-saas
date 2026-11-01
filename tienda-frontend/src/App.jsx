@@ -43,20 +43,24 @@ import { PantallaRecuperarPassword } from './pages/auth/PantallaRecuperarPasswor
 // FUNCIÓN PARA DETECTAR SUBDOMINIOS (Optimizada para pruebas)
 // ========================================================
 const obtenerSubdominioActual = () => {
-  const hostname = window.location.hostname; // Ej: "vperfumery.localhost"
+  const hostname = window.location.hostname; 
   
-  // 1. Si es la URL base pura, no hay subdominio
+  // 1. TRUCO TEMPORAL PARA RENDER: Si estás en tu app de Render, forzamos tu slug
+  if (hostname.includes('onrender.com')) {
+      return 'smisanperfumeria'; // <-- Forzamos el slug que guardaste en Aiven
+  }
+
+  // 2. Si es la URL base pura en local
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return null; 
   }
 
-  // 2. TRUCO PARA TU PC: Si la URL termina en ".localhost"
+  // 3. Si termina en ".localhost" para desarrollo local
   if (hostname.endsWith('.localhost')) {
-      // Le sacamos el ".localhost" y devolvemos lo que queda (ej: "vperfumery")
       return hostname.replace('.localhost', '');
   }
 
-  // 3. PARA PRODUCCIÓN: Si la URL es por ejemplo "vperfumery.lumatosystem.com"
+  // 4. PARA PRODUCCIÓN CON DOMINIO PROPIO (ej: vperfumery.lumatosystem.com)
   const partes = hostname.split('.');
   if (partes.length >= 3 && partes[0] !== 'www' && partes[0] !== 'api') {
       return partes[0]; 
