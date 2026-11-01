@@ -37,6 +37,7 @@ public class AdminSetupConfig implements CommandLineRunner {
             negocioBase = new Negocio();
             negocioBase.setNombre("Lumato - Local Principal");
             negocioBase.setEmailContacto(emailNegocio);
+            negocioBase.setSlug("tiendaprueba-lumato");
             // Podrías setear un token de MP falso acá para pruebas:
             // negocioBase.setMpAccessToken("TEST-TOKEN-MOCK");
 

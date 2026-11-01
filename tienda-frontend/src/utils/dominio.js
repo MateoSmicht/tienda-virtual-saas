@@ -5,7 +5,7 @@ export const obtenerSubdominioActual = () => {
     // que devuelva el nombre de tu cliente para poder probar la tienda.
     // Cuando quieras probar el SaaS principal (Lumato), cambiá esto a null.
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return null; // Cambiá a 'vperfumery' para probar la vista del cliente
+        return 'smisanperfumeria';
     }
 
     const partes = hostname.split('.');
