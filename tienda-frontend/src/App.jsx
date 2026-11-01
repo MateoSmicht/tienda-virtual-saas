@@ -42,25 +42,40 @@ import { PantallaRecuperarPassword } from './pages/auth/PantallaRecuperarPasswor
 // ========================================================
 // FUNCIÓN PARA DETECTAR SUBDOMINIOS (Optimizada para pruebas)
 // ========================================================
+
 const obtenerSubdominioActual = () => {
   const hostname = window.location.hostname; 
+  const pathname = window.location.pathname;
+
+  // 1. SI ESTÁS EN EL ADMIN: Si la URL incluye rutas de administración, 
+  // forzamos que devuelva `null` para que abra el Panel de Control (Modo 2).
+  const rutasAdmin = [
+    '/dashboard', '/productos', '/ofertas', '/estadisticas', 
+    '/clientes', '/categorias', '/pedidos', '/banner', 
+    '/caja', '/proveedores', '/admin'
+  ];
   
-  // 1. TRUCO TEMPORAL PARA RENDER: Si estás en tu app de Render, forzamos tu slug
-  if (hostname.includes('onrender.com')) {
-      return 'smisanperfumeria'; // <-- Forzamos el slug que guardaste en Aiven
+  // Si la ruta actual empieza con alguna de estas, estamos en modo Admin
+  if (rutasAdmin.some(ruta => pathname.startsWith(ruta))) {
+      return null; 
   }
 
-  // 2. Si es la URL base pura en local
+  // 2. TRUCO TEMPORAL PARA RENDER: Si navegas por la tienda normal
+  if (hostname.includes('onrender.com')) {
+      return 'smisanperfumeria'; 
+  }
+
+  // 3. Si es localhost puro
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return null; 
   }
 
-  // 3. Si termina en ".localhost" para desarrollo local
+  // 4. Si termina en ".localhost" para desarrollo local con subdominios
   if (hostname.endsWith('.localhost')) {
       return hostname.replace('.localhost', '');
   }
 
-  // 4. PARA PRODUCCIÓN CON DOMINIO PROPIO (ej: vperfumery.lumatosystem.com)
+  // 5. Producción con dominio propio
   const partes = hostname.split('.');
   if (partes.length >= 3 && partes[0] !== 'www' && partes[0] !== 'api') {
       return partes[0]; 
