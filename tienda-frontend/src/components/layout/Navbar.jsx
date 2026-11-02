@@ -44,7 +44,7 @@ export const Navbar = () => {
         const cargarDatosTienda = async () => {
             const slug = obtenerSubdominioActual();
             try {
-                const res = await fetch(`/api/public/tienda/${slug}`);
+                const res = await fetchConToken(`/api/publico/datos`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.nombre) {
