@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext';
-import { fetchConToken } from '../../services/api';
+import { fetchConToken, traerDatosPublicosTienda } from '../../services/api'; // <--- Importamos la función igual que en el Checkout
 import ModalEditarPerfil from '../../pages/store/ModalEditarPerfil'; 
 
 export const Navbar = () => {
@@ -21,7 +21,7 @@ export const Navbar = () => {
     const dropdownRef = useRef(null);
 
     // ==========================================
-    // ESTADOS Y LÓGICA DE TIENDA (DINÁMICO)
+    // ESTADOS Y LÓGICA DE TIENDA (IGUAL QUE CHECKOUT)
     // ==========================================
     const [nombreTienda, setNombreTienda] = useState('Mi Tienda');
 
@@ -31,7 +31,7 @@ export const Navbar = () => {
             return hostname.split('.')[0];
         }
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'smisanperfumeria'; 
+            return 'smisanperfumeria'; // Slug de prueba local
         }
         const partes = hostname.split('.');
         if (partes.length >= 3 && partes[0] !== 'www' && partes[0] !== 'api') {
@@ -41,23 +41,27 @@ export const Navbar = () => {
     };
 
     useEffect(() => {
-        const cargarDatosTienda = async () => {
-            const slug = obtenerSubdominioActual();
+        const cargarConfiguracionTienda = async () => {
+            const slugActual = obtenerSubdominioActual();
+            if (!slugActual) return;
+
             try {
-                const res = await fetchConToken(`/api/publico/datos`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.nombre) {
-                        setNombreTienda(data.nombre);
-                        document.title = `${data.nombre} - Tienda Online`;
-                    }
+                // Reutilizamos exactamente la misma función que en el Checkout
+                const info = await traerDatosPublicosTienda(slugActual);
+                if (info && info.nombre) {
+                    setNombreTienda(info.nombre);
+                    document.title = `${info.nombre} - Tienda Online`;
                 }
-            } catch (error) {
-                console.error("No se pudo cargar el nombre de la tienda.");
+            } catch (err) {
+                console.error("No se pudieron cargar los datos de configuración del local", err);
+                setNombreTienda(slugActual.toUpperCase());
             }
         };
-        cargarDatosTienda();
+
+        cargarConfiguracionTienda();
     }, []);
+
+  
 
     // ==========================================
     // ESTADOS Y LÓGICA DE SESIÓN
