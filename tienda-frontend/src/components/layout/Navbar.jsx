@@ -23,16 +23,15 @@ export const Navbar = () => {
     // ==========================================
     // ESTADOS Y LÓGICA DE TIENDA (DINÁMICO)
     // ==========================================
-    const [nombreTienda, setNombreTienda] = useState('V-PERFUMERY');
+    const [nombreTienda, setNombreTienda] = useState('Mi Tienda');
 
-    // Función auxiliar para detectar el slug actual (compatible con tu lógica)
     const obtenerSubdominioActual = () => {
         const hostname = window.location.hostname;
         if (hostname.includes('onrender.com')) {
             return hostname.split('.')[0];
         }
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'smisanperfumeria'; // Slug por defecto para pruebas locales
+            return 'smisanperfumeria'; 
         }
         const partes = hostname.split('.');
         if (partes.length >= 3 && partes[0] !== 'www' && partes[0] !== 'api') {
@@ -45,7 +44,6 @@ export const Navbar = () => {
         const cargarDatosTienda = async () => {
             const slug = obtenerSubdominioActual();
             try {
-                // Endpoint público para traer datos de la tienda
                 const res = await fetch(`/api/public/tienda/${slug}`);
                 if (res.ok) {
                     const data = await res.json();
@@ -55,7 +53,7 @@ export const Navbar = () => {
                     }
                 }
             } catch (error) {
-                console.error("No se pudo cargar el nombre de la tienda, usando valor por defecto.");
+                console.error("No se pudo cargar el nombre de la tienda.");
             }
         };
         cargarDatosTienda();
@@ -222,24 +220,24 @@ export const Navbar = () => {
     // ==========================================
     return (
         <header className="sticky top-0 z-50 w-full border-b border-slate-200/60 bg-white/85 backdrop-blur-xl dark:border-slate-800/60 dark:bg-background-dark/85">
-            <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-2.5 lg:gap-6 lg:px-8 lg:py-3.5">
+            <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-2.5 lg:gap-6 lg:px-8 lg:py-3.5">
                 
-                {/* LOGO / NOMBRE DE LA TIENDA PROFESIONAL (Sin emojis) */}
-                <Link to="/" className="flex items-center gap-2 group shrink-0">
-                    <div className="flex flex-col">
-                        <span className="text-base lg:text-lg font-black tracking-wider text-slate-900 dark:text-white group-hover:text-primary transition-colors uppercase">
+                {/* NOMBRE DEL NEGOCIO DINÁMICO (Visible en mobile y desktop, adaptado) */}
+                <Link to="/" className="flex items-center gap-2 group shrink-0 max-w-[140px] lg:max-w-xs">
+                    <div className="flex flex-col truncate">
+                        <span className="text-xs sm:text-sm lg:text-lg font-black tracking-wider text-slate-900 dark:text-white group-hover:text-primary transition-colors uppercase truncate" title={nombreTienda}>
                             {nombreTienda}
                         </span>
-                        <span className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase -mt-1">
+                        <span className="text-[9px] lg:text-[10px] font-semibold tracking-widest text-slate-400 uppercase -mt-0.5 lg:-mt-1 hidden sm:block">
                             Tienda Oficial
                         </span>
                     </div>
                 </Link>
 
-                <div className="flex flex-1 items-center justify-center px-1 lg:px-12">
-                    <div className="relative w-full max-w-2xl" ref={dropdownRef}>
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 z-10">
-                            <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
+                <div className="flex flex-1 items-center justify-center px-1 lg:px-12 max-w-xl">
+                    <div className="relative w-full" ref={dropdownRef}>
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10">
+                            <span className="material-symbols-outlined text-slate-400 text-[18px] lg:text-[20px]">search</span>
                         </div>
                         
                         <input 
@@ -253,16 +251,16 @@ export const Navbar = () => {
                             onFocus={() => {
                                 if (resultadosRapidos.length > 0) setMostrarDropdown(true);
                             }}
-                            placeholder="Buscar productos, marcas o categorías..." 
-                            className="block w-full rounded-full border border-slate-200/80 dark:border-slate-700 bg-slate-50/70 py-2.5 pl-11 pr-10 text-sm text-slate-900 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 dark:bg-slate-800/80 dark:text-slate-200 outline-none transition-all relative z-10 shadow-inner" 
+                            placeholder="Buscar..." 
+                            className="block w-full rounded-full border border-slate-200/80 dark:border-slate-700 bg-slate-50/70 py-2 pl-9 pr-8 lg:py-2.5 lg:pl-11 lg:pr-10 text-xs lg:text-sm text-slate-900 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 dark:bg-slate-800/80 dark:text-slate-200 outline-none transition-all relative z-10 shadow-inner" 
                         />
                         
                         {busquedaLocal && (
                             <button 
                                 onClick={limpiarBusqueda}
-                                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-primary transition-colors z-10"
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-primary transition-colors z-10"
                             >
-                                <span className="material-symbols-outlined text-[18px]">close</span>
+                                <span className="material-symbols-outlined text-[16px] lg:text-[18px]">close</span>
                             </button>
                         )}
 
@@ -306,14 +304,14 @@ export const Navbar = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 lg:gap-3">
+                <div className="flex items-center gap-1.5 lg:gap-3 shrink-0">
                     
-                    {/* BOTÓN DE PERFIL / INICIAR SESIÓN */}
+                    {/* PERFIL */}
                     {token ? (
-                        <div className="relative hidden lg:block" ref={menuPerfilRef}>
+                        <div className="relative hidden sm:block" ref={menuPerfilRef}>
                             <button 
                                 onClick={() => setMenuPerfilAbierto(!menuPerfilAbierto)}
-                                className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 hover:bg-primary/20 transition-colors focus:outline-none shadow-sm"
+                                className="h-9 w-9 lg:h-10 lg:w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 hover:bg-primary/20 transition-colors focus:outline-none shadow-sm text-xs lg:text-sm"
                                 title="Mi Perfil"
                             >
                                 {letraInicial}
@@ -351,29 +349,29 @@ export const Navbar = () => {
                             )}
                         </div>
                     ) : (
-                        <Link to="/login" className="hidden lg:flex items-center gap-2 rounded-full px-4 py-2 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 transition-colors">
-                            <span className="material-symbols-outlined text-[20px]">person</span>
-                            <span className="text-sm font-semibold">Ingresar</span>
+                        <Link to="/login" className="hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1.5 lg:px-4 lg:py-2 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 transition-colors">
+                            <span className="material-symbols-outlined text-[18px] lg:text-[20px]">person</span>
+                            <span className="text-xs lg:text-sm font-semibold">Ingresar</span>
                         </Link>
                     )}
 
                     {/* FAVORITOS */}
-                    <Link to="/favoritos" className="relative hidden lg:flex items-center justify-center rounded-full bg-red-500/10 p-2.5 text-red-500 hover:bg-red-500/20 transition-colors" title="Mis Favoritos">
-                        <span className="material-symbols-outlined text-[20px]" style={cantidadFavoritos > 0 ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                    <Link to="/favoritos" className="relative flex items-center justify-center rounded-full bg-red-500/10 p-2 lg:p-2.5 text-red-500 hover:bg-red-500/20 transition-colors" title="Mis Favoritos">
+                        <span className="material-symbols-outlined text-[18px] lg:text-[20px]" style={cantidadFavoritos > 0 ? { fontVariationSettings: "'FILL' 1" } : {}}>
                             favorite
                         </span>
                         {cantidadFavoritos > 0 && (
-                            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                            <span className="absolute -right-1 -top-1 flex h-4 w-4 lg:h-5 lg:w-5 items-center justify-center rounded-full bg-red-500 text-[9px] lg:text-[10px] font-bold text-white shadow-sm">
                                 {cantidadFavoritos}
                             </span>
                         )}
                     </Link>
 
                     {/* CARRITO */}
-                    <Link to="/checkout" className="relative hidden lg:flex items-center justify-center rounded-full bg-primary/10 p-2.5 text-primary hover:bg-primary/20 transition-colors" title="Mi Carrito">
-                        <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
+                    <Link to="/checkout" className="relative flex items-center justify-center rounded-full bg-primary/10 p-2 lg:p-2.5 text-primary hover:bg-primary/20 transition-colors" title="Mi Carrito">
+                        <span className="material-symbols-outlined text-[18px] lg:text-[20px]">shopping_cart</span>
                         {cantidadTotal > 0 && (
-                            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
+                            <span className="absolute -right-1 -top-1 flex h-4 w-4 lg:h-5 lg:w-5 items-center justify-center rounded-full bg-primary text-[9px] lg:text-[10px] font-bold text-white shadow-sm">
                                 {cantidadTotal}
                             </span>
                         )}
