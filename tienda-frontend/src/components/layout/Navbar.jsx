@@ -21,7 +21,48 @@ export const Navbar = () => {
     const dropdownRef = useRef(null);
 
     // ==========================================
-    // ESTADOS Y LÓGICA DE SESIÓN (MODIFICADO)
+    // ESTADOS Y LÓGICA DE TIENDA (DINÁMICO)
+    // ==========================================
+    const [nombreTienda, setNombreTienda] = useState('V-PERFUMERY');
+
+    // Función auxiliar para detectar el slug actual (compatible con tu lógica)
+    const obtenerSubdominioActual = () => {
+        const hostname = window.location.hostname;
+        if (hostname.includes('onrender.com')) {
+            return hostname.split('.')[0];
+        }
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'smisanperfumeria'; // Slug por defecto para pruebas locales
+        }
+        const partes = hostname.split('.');
+        if (partes.length >= 3 && partes[0] !== 'www' && partes[0] !== 'api') {
+            return partes[0];
+        }
+        return 'smisanperfumeria';
+    };
+
+    useEffect(() => {
+        const cargarDatosTienda = async () => {
+            const slug = obtenerSubdominioActual();
+            try {
+                // Endpoint público para traer datos de la tienda
+                const res = await fetch(`/api/public/tienda/${slug}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.nombre) {
+                        setNombreTienda(data.nombre);
+                        document.title = `${data.nombre} - Tienda Online`;
+                    }
+                }
+            } catch (error) {
+                console.error("No se pudo cargar el nombre de la tienda, usando valor por defecto.");
+            }
+        };
+        cargarDatosTienda();
+    }, []);
+
+    // ==========================================
+    // ESTADOS Y LÓGICA DE SESIÓN
     // ==========================================
     const token = localStorage.getItem('token');
     const [nombreUsuario, setNombreUsuario] = useState('Usuario');
@@ -32,7 +73,6 @@ export const Navbar = () => {
     const [mostrarModalPerfil, setMostrarModalPerfil] = useState(false);
     const menuPerfilRef = useRef(null);
 
-    // Cargar los datos reales del usuario
     useEffect(() => {
         const cargarDatosUsuario = async () => {
             if (token) {
@@ -40,7 +80,6 @@ export const Navbar = () => {
                     const res = await fetchConToken('/user/me');
                     if (res.ok) {
                         const data = await res.json();
-                        // Si tiene nombre lo usa, sino usa lo que está antes del @ del email
                         setNombreUsuario(data.nombre || data.email?.split('@')[0] || 'Usuario');
                         setEmailUsuario(data.email || '');
                     }
@@ -51,8 +90,6 @@ export const Navbar = () => {
         };
 
         cargarDatosUsuario();
-        
-        // Escuchamos si el modal de perfil avisa que se cambiaron los datos
         window.addEventListener('perfilActualizado', cargarDatosUsuario);
         return () => window.removeEventListener('perfilActualizado', cargarDatosUsuario);
     }, [token]);
@@ -185,21 +222,24 @@ export const Navbar = () => {
     // ==========================================
     return (
         <header className="sticky top-0 z-50 w-full border-b border-slate-200/60 bg-white/85 backdrop-blur-xl dark:border-slate-800/60 dark:bg-background-dark/85">
-            <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-2.5 lg:gap-4 lg:px-8 lg:py-3">
+            <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-2.5 lg:gap-6 lg:px-8 lg:py-3.5">
                 
-                <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity shrink-0">
-                    <div className="flex items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 p-2 text-white shadow-md shadow-primary/20">
-                        <span className="material-symbols-outlined text-xl lg:text-2xl">fragrance</span>
+                {/* LOGO / NOMBRE DE LA TIENDA PROFESIONAL (Sin emojis) */}
+                <Link to="/" className="flex items-center gap-2 group shrink-0">
+                    <div className="flex flex-col">
+                        <span className="text-base lg:text-lg font-black tracking-wider text-slate-900 dark:text-white group-hover:text-primary transition-colors uppercase">
+                            {nombreTienda}
+                        </span>
+                        <span className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase -mt-1">
+                            Tienda Oficial
+                        </span>
                     </div>
-                    <h1 className="hidden text-lg font-black tracking-tight text-slate-800 dark:text-white lg:block">
-                        V-PERFUMERY
-                    </h1>
                 </Link>
 
-                <div className="flex flex-1 items-center justify-center px-1 lg:px-16">
+                <div className="flex flex-1 items-center justify-center px-1 lg:px-12">
                     <div className="relative w-full max-w-2xl" ref={dropdownRef}>
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10">
-                            <span className="material-symbols-outlined text-slate-400">search</span>
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 z-10">
+                            <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
                         </div>
                         
                         <input 
@@ -213,16 +253,16 @@ export const Navbar = () => {
                             onFocus={() => {
                                 if (resultadosRapidos.length > 0) setMostrarDropdown(true);
                             }}
-                            placeholder="Buscar perfumes, limpieza o cuidado personal..." 
-                            className="block w-full rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 py-2.5 pl-10 pr-10 text-sm text-slate-900 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 dark:bg-slate-800 dark:text-slate-200 outline-none transition-all relative z-10" 
+                            placeholder="Buscar productos, marcas o categorías..." 
+                            className="block w-full rounded-full border border-slate-200/80 dark:border-slate-700 bg-slate-50/70 py-2.5 pl-11 pr-10 text-sm text-slate-900 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 dark:bg-slate-800/80 dark:text-slate-200 outline-none transition-all relative z-10 shadow-inner" 
                         />
                         
                         {busquedaLocal && (
                             <button 
                                 onClick={limpiarBusqueda}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-primary transition-colors z-10"
+                                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-primary transition-colors z-10"
                             >
-                                <span className="material-symbols-outlined text-[20px]">close</span>
+                                <span className="material-symbols-outlined text-[18px]">close</span>
                             </button>
                         )}
 
@@ -249,7 +289,7 @@ export const Navbar = () => {
                                                     <p className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{p.nombre}</p>
                                                     <p className="font-black text-primary text-sm">${p.esOferta ? p.precioOferta.toLocaleString() : p.precio.toLocaleString()}</p>
                                                 </div>
-                                                <span className="material-symbols-outlined text-slate-300 dark:text-slate-600">call_made</span>
+                                                <span className="material-symbols-outlined text-slate-300 dark:text-slate-600 text-[18px]">call_made</span>
                                             </div>
                                         ))}
                                         <button 
@@ -266,20 +306,19 @@ export const Navbar = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 lg:gap-4">
+                <div className="flex items-center gap-2 lg:gap-3">
                     
-                    {/* LÓGICA CONDICIONAL: ¿Está logueado o no? */}
+                    {/* BOTÓN DE PERFIL / INICIAR SESIÓN */}
                     {token ? (
                         <div className="relative hidden lg:block" ref={menuPerfilRef}>
                             <button 
                                 onClick={() => setMenuPerfilAbierto(!menuPerfilAbierto)}
-                                className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 hover:bg-primary/20 transition-colors focus:outline-none"
+                                className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 hover:bg-primary/20 transition-colors focus:outline-none shadow-sm"
                                 title="Mi Perfil"
                             >
                                 {letraInicial}
                             </button>
 
-                            {/* Menú Desplegable del Cliente */}
                             {menuPerfilAbierto && (
                                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-2 z-50 animate-fade-in">
                                     <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 mb-1">
@@ -313,14 +352,14 @@ export const Navbar = () => {
                         </div>
                     ) : (
                         <Link to="/login" className="hidden lg:flex items-center gap-2 rounded-full px-4 py-2 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 transition-colors">
-                            <span className="material-symbols-outlined">person</span>
+                            <span className="material-symbols-outlined text-[20px]">person</span>
                             <span className="text-sm font-semibold">Ingresar</span>
                         </Link>
                     )}
 
-                    {/* BOTÓN DE FAVORITOS — Solo visible en desktop */}
+                    {/* FAVORITOS */}
                     <Link to="/favoritos" className="relative hidden lg:flex items-center justify-center rounded-full bg-red-500/10 p-2.5 text-red-500 hover:bg-red-500/20 transition-colors" title="Mis Favoritos">
-                        <span className="material-symbols-outlined" style={cantidadFavoritos > 0 ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                        <span className="material-symbols-outlined text-[20px]" style={cantidadFavoritos > 0 ? { fontVariationSettings: "'FILL' 1" } : {}}>
                             favorite
                         </span>
                         {cantidadFavoritos > 0 && (
@@ -330,9 +369,9 @@ export const Navbar = () => {
                         )}
                     </Link>
 
-                    {/* BOTÓN DEL CARRITO — Solo visible en desktop */}
+                    {/* CARRITO */}
                     <Link to="/checkout" className="relative hidden lg:flex items-center justify-center rounded-full bg-primary/10 p-2.5 text-primary hover:bg-primary/20 transition-colors" title="Mi Carrito">
-                        <span className="material-symbols-outlined">shopping_cart</span>
+                        <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
                         {cantidadTotal > 0 && (
                             <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
                                 {cantidadTotal}
