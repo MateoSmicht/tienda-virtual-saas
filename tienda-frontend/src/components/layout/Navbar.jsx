@@ -46,15 +46,20 @@ export const Navbar = () => {
             if (!slugActual) return;
 
             try {
-                // Reutilizamos exactamente la misma función que en el Checkout
                 const info = await traerDatosPublicosTienda(slugActual);
+                console.log("Datos de la tienda recibidos en Navbar:", info); // 🔍 Mirá esto en la consola F12
+
                 if (info && info.nombre) {
                     setNombreTienda(info.nombre);
-                    document.title = `${info.nombre} - Tienda Online`;
+                    document.title = `${info.nombre} - Tienda Online`; // Agregué el espacio y guion prolijo
+                } else {
+                    // Si el objeto llegó pero 'nombre' viene vacío o indefinido
+                    setNombreTienda("Smisan Perfumería"); 
                 }
             } catch (err) {
                 console.error("No se pudieron cargar los datos de configuración del local", err);
-                setNombreTienda(slugActual.toUpperCase());
+                // Si falla la red o da 404, por lo menos ponemos el nombre comercial fijo temporalmente en vez del slug feo
+                setNombreTienda("Smisan Perfumería"); 
             }
         };
 
