@@ -131,10 +131,10 @@ const AdminLayout = ({ children }) => {
 // ========================================================
 // 3. LAYOUT DE LA TIENDA (Público)
 // ========================================================
-const StoreLayout = ({ children }) => {
+const StoreLayout = ({ children, tiendaSlug }) => {
   return (
     <div className="relative flex min-h-screen flex-col bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
-      <Navbar />
+      <Navbar tiendaSlug={tiendaSlug} />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-8">
         {children}
       </main>
@@ -159,12 +159,12 @@ function App() {
         <CartProvider>
           <Routes>
             {/* Pasamos el subdominio como prop para que hagan los fetch */}
-            <Route path="/" element={<StoreLayout><Storefront tiendaSlug={subdominio} /></StoreLayout>} />
-            <Route path="/producto/:id" element={<StoreLayout><PantallaPerfilProduct tiendaSlug={subdominio} /></StoreLayout>} />
-            <Route path="/favoritos" element={<StoreLayout><PantallaFavoritos /></StoreLayout>} />
+            <Route path="/" element={<StoreLayout tiendaSlug={subdominio}><Storefront tiendaSlug={subdominio} /></StoreLayout>} />
+            <Route path="/producto/:id" element={<StoreLayout tiendaSlug={subdominio}><PantallaPerfilProduct tiendaSlug={subdominio} /></StoreLayout>} />
+            <Route path="/favoritos" element={<StoreLayout tiendaSlug={subdominio}><PantallaFavoritos /></StoreLayout>} />
             {/* ✅ ASÍ DEBE QUEDAR */}
-            <Route path="/checkout" element={<StoreLayout><PantallaCheckout tiendaSlug={subdominio} /></StoreLayout>} />
-            <Route path="/mis-pedidos" element={<StoreLayout><PantallaMisPedidos /></StoreLayout>} />
+            <Route path="/checkout" element={<StoreLayout tiendaSlug={subdominio}><PantallaCheckout tiendaSlug={subdominio} /></StoreLayout>} />
+            <Route path="/mis-pedidos" element={<StoreLayout tiendaSlug={subdominio}><PantallaMisPedidos /></StoreLayout>} />
             
             <Route path="/login" element={<PantallaLoginCliente />} />
             <Route path="/reset-password" element={<PantallaResetPassword />} />
