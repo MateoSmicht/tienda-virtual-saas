@@ -225,17 +225,18 @@ export const Navbar = ({ tiendaSlug }) => {
         <header className="sticky top-0 z-50 w-full border-b border-slate-200/60 bg-white/85 backdrop-blur-xl dark:border-slate-800/60 dark:bg-background-dark/85">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-2.5 lg:gap-6 lg:px-8 lg:py-3.5">
                 
-                {/* NOMBRE DEL NEGOCIO DINÁMICO (Visible en mobile y desktop, adaptado) */}
-                <Link to="/" className="flex items-center gap-2 group shrink-0 max-w-[140px] lg:max-w-xs">
-                    <div className="flex flex-col truncate">
-                        <span className="text-xs sm:text-sm lg:text-lg font-black tracking-wider text-slate-900 dark:text-white group-hover:text-primary transition-colors uppercase truncate" title={nombreTienda}>
-                            {nombreTienda}
-                        </span>
-                        <span className="text-[9px] lg:text-[10px] font-semibold tracking-widest text-slate-400 uppercase -mt-0.5 lg:-mt-1 hidden sm:block">
-                            Tienda Oficial
-                        </span>
-                    </div>
-                </Link>
+                {/* NOMBRE DEL NEGOCIO DINÁMICO (Apilado y elegante en mobile) */}
+                    <Link to="/" className="flex items-center gap-2 group shrink-0 max-w-[130px] sm:max-w-xs">
+                        <div className="flex flex-col truncate">
+                            {/* Usamos un contenedor que divide el texto si tiene espacios, o mostramos el nombre completo adaptado */}
+                            <span className="text-[11px] sm:text-sm lg:text-lg font-black tracking-wider text-slate-900 dark:text-white group-hover:text-primary transition-colors uppercase leading-tight truncate" title={nombreTienda}>
+                                {nombreTienda}
+                            </span>
+                            <span className="text-[8px] sm:text-[9px] lg:text-[10px] font-semibold tracking-widest text-slate-400 uppercase -mt-0.5 hidden sm:block">
+                                Tienda Oficial
+                            </span>
+                        </div>
+                    </Link>
 
                 <div className="flex flex-1 items-center justify-center px-1 lg:px-12 max-w-xl">
                     <div className="relative w-full" ref={dropdownRef}>
