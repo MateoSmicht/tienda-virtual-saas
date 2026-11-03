@@ -5,7 +5,8 @@ import { useFavorites } from '../../context/FavoritesContext';
 import { fetchConToken, traerDatosPublicosTienda } from '../../services/api'; // <--- Importamos la función igual que en el Checkout
 import ModalEditarPerfil from '../../pages/store/ModalEditarPerfil'; 
 
-export const Navbar = () => {
+export const Navbar = ({ tiendaSlug }) => {
+
     const { cantidadTotal } = useCart();
     const { favoritos } = useFavorites(); 
     const cantidadFavoritos = favoritos.length;
@@ -42,29 +43,22 @@ export const Navbar = () => {
 
     useEffect(() => {
         const cargarConfiguracionTienda = async () => {
-            const slugActual = obtenerSubdominioActual();
-            if (!slugActual) return;
+            if (!tiendaSlug) return; // Si no hay slug todavía, esperamos
 
             try {
-                const info = await traerDatosPublicosTienda(slugActual);
-                console.log("Datos de la tienda recibidos en Navbar:", info); // 🔍 Mirá esto en la consola F12
-
+                // Usamos exactamente la misma función que ya te funciona en el Checkout
+                const info = await traerDatosPublicosTienda(tiendaSlug);
                 if (info && info.nombre) {
                     setNombreTienda(info.nombre);
-                    document.title = `${info.nombre} - Tienda Online`; // Agregué el espacio y guion prolijo
-                } else {
-                    // Si el objeto llegó pero 'nombre' viene vacío o indefinido
-                    setNombreTienda("Smisan Perfumería"); 
+                    document.title = `${info.nombre} - Tienda Online`;
                 }
             } catch (err) {
-                console.error("No se pudieron cargar los datos de configuración del local", err);
-                // Si falla la red o da 404, por lo menos ponemos el nombre comercial fijo temporalmente en vez del slug feo
-                setNombreTienda("Smisan Perfumería"); 
+                console.error("No se pudieron cargar los datos de la tienda en la Navbar", err);
             }
         };
 
         cargarConfiguracionTienda();
-    }, []);
+    }, [tiendaSlug]);
 
   
 
