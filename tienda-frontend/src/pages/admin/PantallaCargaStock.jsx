@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchConToken } from '../../services/api'; 
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 const PantallaCargaStock = () => {
   const navigate = useNavigate();
@@ -12,6 +12,9 @@ const PantallaCargaStock = () => {
   
   // Nuevo estado para el escáner de cámara
   const [escaneando, setEscaneando] = useState(false);
+  const [iniciandoCamara, setIniciandoCamara] = useState(false);
+  const [errorCamara, setErrorCamara] = useState(null);
+  const html5QrCodeRef = useRef(null);
 
   // Estadísticas globales del backend
   const [estadisticas, setEstadisticas] = useState({ total: 0, activos: 0, sinStock: 0 });
@@ -92,44 +95,136 @@ const PantallaCargaStock = () => {
   };
 
   // ==========================================
-  // LÓGICA DE LA CÁMARA (Html5QrcodeScanner)
+  // LÓGICA DE LA CÁMARA (Html5Qrcode - Cámara Trasera Automática)
   // ==========================================
   useEffect(() => {
-    if (escaneando) {
-      // Configuramos el escáner para que busque principalmente códigos de barra (1D)
-      const scanner = new Html5QrcodeScanner("lector-camara", {
-        fps: 10,
-        qrbox: { width: 300, height: 150 },
-        // 👇 ESTA ES LA MAGIA: Solo lee códigos de productos reales
-        formatsToSupport: [ 
-            Html5QrcodeSupportedFormats.EAN_13, 
-            Html5QrcodeSupportedFormats.UPC_A, 
-            Html5QrcodeSupportedFormats.EAN_8 
-        ]
-      });
+    let activo = true;
 
-      scanner.render(
-        (codigoLeido) => {
-          // ÉXITO: Leyó un código
-          scanner.clear(); // Apagamos la cámara
-          setEscaneando(false); // Cerramos el modal
-          setBusqueda(codigoLeido); // Llenamos el input visualmente
-          buscarPorCodigo(codigoLeido); // Disparamos la búsqueda inmediata
-        },
-        (error) => {
-          // Ignoramos los errores continuos de "código no encontrado en este frame"
+    const iniciarCamara = async () => {
+      if (!escaneando) return;
+
+      setErrorCamara(null);
+      setIniciandoCamara(true);
+
+      // Esperamos que el DOM del modal se renderice con sus dimensiones completas
+      await new Promise(r => setTimeout(r, 200));
+      if (!activo) return;
+
+      const elemento = document.getElementById("lector-camara");
+      if (!elemento) return;
+
+      try {
+        const qrCodeScanner = new Html5Qrcode("lector-camara");
+        html5QrCodeRef.current = qrCodeScanner;
+
+        const qrConfig = {
+          fps: 15,
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const w = Math.min(Math.floor(viewfinderWidth * 0.85), 320);
+            const h = Math.min(Math.floor(viewfinderHeight * 0.45), 160);
+            return {
+              width: Math.max(w, 100),
+              height: Math.max(h, 60)
+            };
+          },
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.QR_CODE
+          ]
+        };
+
+        const onScanSuccess = async (codigoLeido) => {
+          if (!activo) return;
+          try {
+            if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+              await html5QrCodeRef.current.stop();
+            }
+            html5QrCodeRef.current?.clear();
+          } catch (e) {
+            console.warn("Aviso al detener tras éxito:", e);
+          }
+          setEscaneando(false);
+          setBusqueda(codigoLeido);
+          buscarPorCodigo(codigoLeido);
+        };
+
+        const onScanFailure = () => {};
+
+        // Auto-selección de cámara trasera (environment)
+        let cameraConfig = { facingMode: "environment" };
+
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (devices && devices.length > 0) {
+            const camaraTrasera = devices.find(d => {
+              const label = (d.label || '').toLowerCase();
+              return label.includes('back') || 
+                     label.includes('trasera') || 
+                     label.includes('rear') || 
+                     label.includes('environment');
+            });
+
+            if (camaraTrasera) {
+              cameraConfig = camaraTrasera.id;
+            } else if (devices.length > 1) {
+              cameraConfig = devices[devices.length - 1].id;
+            }
+          }
+        } catch (e) {
+          cameraConfig = { facingMode: "environment" };
         }
-      );
 
-      // Limpiamos la cámara si el usuario cierra el modal a la fuerza
-      return () => {
-        scanner.clear().catch(err => console.error("Error limpiando cámara", err));
-      };
-    }
+        if (!activo) return;
+
+        try {
+          await qrCodeScanner.start(cameraConfig, qrConfig, onScanSuccess, onScanFailure);
+        } catch (primerError) {
+          console.warn("Fallo con config de cámara inicial, probando fallback:", primerError);
+          if (!activo) return;
+          try {
+            await qrCodeScanner.start({ facingMode: "environment" }, qrConfig, onScanSuccess, onScanFailure);
+          } catch (segundoError) {
+            console.warn("Fallo con facingMode environment, probando cámara por defecto:", segundoError);
+            if (!activo) return;
+            await qrCodeScanner.start({ facingMode: "user" }, qrConfig, onScanSuccess, onScanFailure);
+          }
+        }
+
+        if (activo) setIniciandoCamara(false);
+
+      } catch (err) {
+        console.error("Error al inicializar la cámara:", err);
+        if (activo) {
+          setIniciandoCamara(false);
+          setErrorCamara("No se pudo iniciar la cámara trasera. Verifique los permisos de cámara en su navegador.");
+        }
+      }
+    };
+
+    iniciarCamara();
+
+    return () => {
+      activo = false;
+      if (html5QrCodeRef.current) {
+        try {
+          if (html5QrCodeRef.current.isScanning) {
+            html5QrCodeRef.current.stop().catch(e => console.warn(e));
+          }
+          html5QrCodeRef.current.clear();
+        } catch (err) {
+          console.warn("Aviso al desmontar cámara:", err);
+        }
+        html5QrCodeRef.current = null;
+      }
+    };
   }, [escaneando]);
 
-
-  const seleccionarProducto = (prod) => {
+    const seleccionarProducto = (prod) => {
     setProductoSeleccionado(prod);
     setFormStock({
       ppp: prod.ppp || 0,
@@ -211,20 +306,51 @@ const PantallaCargaStock = () => {
       {escaneando && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-sm p-4 animate-fade-in">
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl w-full max-w-md shadow-2xl flex flex-col">
-                <div className="flex justify-between items-center mb-4 px-2">
+                <div className="flex justify-between items-center mb-3 px-2">
                     <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <span className="material-symbols-outlined text-teal-600">barcode_scanner</span>
-                        Escanear Código
+                        Escanear Código de Barras
                     </h3>
-                    <button onClick={() => setEscaneando(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                    <button 
+                        onClick={() => setEscaneando(false)} 
+                        className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
                 
                 {/* DIV DONDE SE RENDERIZA LA CÁMARA */}
-                <div id="lector-camara" className="w-full rounded-xl overflow-hidden border-2 border-teal-500/30 bg-black"></div>
+                <div className="relative w-full rounded-xl overflow-hidden border-2 border-teal-500/40 bg-black min-h-[260px] flex items-center justify-center">
+                    <div id="lector-camara" className="w-full"></div>
+                    
+                    {iniciandoCamara && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-900/90 text-white z-10">
+                            <span className="material-symbols-outlined animate-spin text-3xl text-teal-400">progress_activity</span>
+                            <p className="text-xs font-semibold text-slate-300">Iniciando cámara trasera...</p>
+                        </div>
+                    )}
+
+                    {errorCamara && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center bg-slate-900/95 text-white z-10">
+                            <span className="material-symbols-outlined text-3xl text-red-400">videocam_off</span>
+                            <p className="text-xs text-red-200">{errorCamara}</p>
+                            <button 
+                                onClick={() => {
+                                  setErrorCamara(null);
+                                  setEscaneando(false);
+                                  setTimeout(() => setEscaneando(true), 150);
+                                }}
+                                className="mt-2 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-xs font-bold text-white transition-colors"
+                            >
+                                Reintentar
+                            </button>
+                        </div>
+                    )}
+                </div>
                 
-                <p className="text-xs text-center text-slate-500 mt-4">Enfoque el código de barras dentro del recuadro.</p>
+                <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-3">
+                    Apunta la cámara trasera al código de barras para detectarlo automáticamente.
+                </p>
             </div>
         </div>
       )}
