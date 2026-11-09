@@ -40,7 +40,7 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(request -> {
                     // 1. RUTAS 100% PÚBLICAS (No requieren token)
-                    request.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
+                    request.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html","/api/health").permitAll();
                     request.requestMatchers("/api/register", "/api/auth/login", "/api/auth/recuperar-password",
                             "/api/productos/publico/", "/api/categorias/publico/", "/api/banner/publico/","/api/auth/reset-password","/api/negocios/publico/").permitAll();
                     request.requestMatchers("/api/pagos/notificacion").permitAll(); // Webhook de Mercado Pago
