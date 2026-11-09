@@ -37,6 +37,8 @@ import { PantallaLoginCliente } from './pages/auth/PantallaLoginCliente';
 import { PantallaMisPedidos } from './pages/store/PantallaMisPedidos';
 import { PantallaResetPassword } from './pages/auth/PantallaResetPassword';
 import { PantallaRecuperarPassword } from './pages/auth/PantallaRecuperarPassword';
+import { PoliticaPrivacidad } from './pages/legal/PoliticaPrivacidad';
+import { TerminosCondiciones } from './pages/legal/TerminosCondiciones';
 
 
 // ========================================================
@@ -175,6 +177,10 @@ function App() {
             <Route path="/pago/fallo" element={<PantallaPagoFallo />} />
             <Route path="/pago/pendiente" element={<PantallaPagoPendiente />} />
 
+            {/* Rutas legales */}
+            <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
+            <Route path="/terminos-condiciones" element={<TerminosCondiciones />} />
+
             {/* Redirección de seguridad: Un cliente no puede entrar al panel admin por acá */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -213,6 +219,10 @@ function App() {
         <Route path="/productos/stock/masivo" element={<RutaProtegida><AdminLayout><PantallaCargaStockMasiva /></AdminLayout></RutaProtegida>} />
         <Route path="/productos/stock/historial" element={<RutaProtegida><AdminLayout><PantallaHistorialStock /></AdminLayout></RutaProtegida>} />
         
+        {/* Rutas legales */}
+        <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
+        <Route path="/terminos-condiciones" element={<TerminosCondiciones />} />
+
         {/* Cualquier URL basura en LumatoSystem redirige al login admin */}
         <Route path="*" element={<Navigate to="/admin/login" replace />} />
       </Routes>

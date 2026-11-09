@@ -13,6 +13,7 @@ export const PantallaLoginCliente = () => {
     const [apellido, setApellido] = useState(''); 
     const [telefono, setTelefono] = useState(''); 
     
+    const [aceptaTerminos, setAceptaTerminos] = useState(false);
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState(null);
     const [mensajeExito, setMensajeExito] = useState(null);
@@ -220,11 +221,34 @@ export const PantallaLoginCliente = () => {
                         )}
                     </div>
 
+                    {!isLogin && (
+                        <div className="mb-6">
+                            <label className="flex items-start gap-3 cursor-pointer group">
+                                <input 
+                                    type="checkbox"
+                                    checked={aceptaTerminos}
+                                    onChange={(e) => setAceptaTerminos(e.target.checked)}
+                                    className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary shrink-0"
+                                />
+                                <span className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    He leído y acepto la{' '}
+                                    <Link to="/politica-privacidad" target="_blank" className="text-primary font-bold hover:underline">
+                                        Política de Privacidad
+                                    </Link>{' '}
+                                    y los{' '}
+                                    <Link to="/terminos-condiciones" target="_blank" className="text-primary font-bold hover:underline">
+                                        Términos y Condiciones
+                                    </Link>
+                                </span>
+                            </label>
+                        </div>
+                    )}
+
                     <button 
                         type="submit" 
-                        disabled={cargando}
+                        disabled={cargando || (!isLogin && !aceptaTerminos)}
                         className={`w-full py-3.5 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 shadow-lg 
-                            ${cargando ? 'bg-primary/70 cursor-not-allowed shadow-none' : 'bg-primary hover:bg-primary/90 shadow-primary/30 hover:-translate-y-0.5'}`}
+                            ${(cargando || (!isLogin && !aceptaTerminos)) ? 'bg-primary/70 cursor-not-allowed shadow-none' : 'bg-primary hover:bg-primary/90 shadow-primary/30 hover:-translate-y-0.5'}`}
                     >
                         {cargando ? (
                             <><span className="material-symbols-outlined animate-spin">sync</span> Procesando...</>

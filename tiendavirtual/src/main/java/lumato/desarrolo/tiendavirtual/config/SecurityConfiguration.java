@@ -91,6 +91,7 @@ public class SecurityConfiguration {
 
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
+                "http://*.localhost:*",
                 "https://*.onrender.com" // Esto permite automáticamente cualquier subdominio en Render (ej: *.tienda-frontend-hocm.onrender.com o el dominio final que uses)
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
