@@ -7,7 +7,7 @@ import ModalEditarPerfil from '../../pages/store/ModalEditarPerfil';
 
 export const Navbar = ({ tiendaSlug }) => {
 
-    const { cantidadTotal } = useCart();
+    const { cantidadTotal, sincronizarPreciosCarrito } = useCart();
     const { favoritos } = useFavorites(); 
     const cantidadFavoritos = favoritos.length;
 
@@ -59,7 +59,10 @@ export const Navbar = ({ tiendaSlug }) => {
         };
 
         cargarConfiguracionTienda();
-    }, [slugEfectivo]);
+        if (slugEfectivo) {
+            sincronizarPreciosCarrito(slugEfectivo);
+        }
+    }, [slugEfectivo, sincronizarPreciosCarrito]);
 
   
 

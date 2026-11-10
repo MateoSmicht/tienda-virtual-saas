@@ -7,12 +7,23 @@ import { jwtDecode } from "jwt-decode";
 
 // RECIBIMOS EL TIENDASLUG
 export const PantallaCheckout = ({ tiendaSlug }) => {
-    const { carrito, subtotal, vaciarCarrito, eliminarDelCarrito, actualizarCantidad } = useCart();
+    const { 
+        carrito, 
+        subtotal, 
+        vaciarCarrito, 
+        eliminarDelCarrito, 
+        actualizarCantidad,
+        sincronizarPreciosCarrito,
+        notificacionesPrecio,
+        limpiarNotificacionesPrecio
+    } = useCart();
     
     const [metodoPago, setMetodoPago] = useState('MERCADO_PAGO');
     const [permiteReemplazo, setPermiteReemplazo] = useState(false);
     const [notasAdicionales, setNotasAdicionales] = useState('');
     const [procesando, setProcesando] = useState(false);
+    const [pedidoTransferenciaExito, setPedidoTransferenciaExito] = useState(null);
+    const [copiadoCampo, setCopiadoCampo] = useState(null);
     
     // NUEVO ESTADO PARA LA CONFIGURACIÓN DE LA TIENDA
     const [datosTienda, setDatosTienda] = useState(null);
@@ -30,12 +41,30 @@ export const PantallaCheckout = ({ tiendaSlug }) => {
             }
         };
         cargarConfiguracionTienda();
-    }, [tiendaSlug]);
+        if (tiendaSlug) {
+            sincronizarPreciosCarrito(tiendaSlug);
+        }
+    }, [tiendaSlug, sincronizarPreciosCarrito]);
 
     // CÁLCULOS DINÁMICOS BASADOS EN LA BASE DE DATOS
     const costoEnvio = carrito.length > 0 && datosTienda?.costoEnvio ? datosTienda.costoEnvio : 0;
     const costoServicio = carrito.length > 0 && datosTienda?.costoServicio ? datosTienda.costoServicio : 0;
     const totalFinal = subtotal + costoEnvio + costoServicio;
+
+    const copiarAlPortapapeles = (texto, campo) => {
+        if (!texto) return;
+        navigator.clipboard.writeText(texto);
+        setCopiadoCampo(campo);
+        setTimeout(() => setCopiadoCampo(null), 2000);
+    };
+
+    const generarLinkWhatsapp = (nroPedido, montoTotal) => {
+        const telefono = (datosTienda?.whatsapp || '').replace(/\D/g, '');
+        const texto = encodeURIComponent(
+            `¡Hola! Acabo de realizar el Pedido #${nroPedido} por ${formatPrice(montoTotal)} en ${datosTienda?.nombre || 'la tienda'}. Te adjunto el comprobante de transferencia bancaria.`
+        );
+        return telefono ? `https://wa.me/${telefono}?text=${texto}` : `https://wa.me/?text=${texto}`;
+    };
 
     const formatPrice = (price) => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
@@ -101,10 +130,17 @@ export const PantallaCheckout = ({ tiendaSlug }) => {
                 if (data.linkDePago) {
                     window.location.href = data.linkDePago;
                     vaciarCarrito(); 
+                } else if (metodoPago === 'TRANSFERENCIA') {
+                    // Guardamos la info del pedido generado para el modal
+                    setPedidoTransferenciaExito({
+                        id: data.id,
+                        total: totalFinal
+                    });
+                    vaciarCarrito();
                 } else {
                     alert(`¡Pedido #${data.id} generado con éxito! Nos contactaremos a la brevedad.`);
                     vaciarCarrito();
-                    navigate('/'); 
+                    navigate('/mis-pedidos'); 
                 }
             } else {
                 alert("Hubo un error al procesar tu pedido en el servidor.");
@@ -135,6 +171,41 @@ export const PantallaCheckout = ({ tiendaSlug }) => {
             <main className="flex-1 px-6 md:px-40 py-8">
                 <div className="max-w-[960px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
                     
+                    {/* ALERTA DE CAMBIO DE PRECIO / OFERTA */}
+                    {notificacionesPrecio.length > 0 && (
+                        <div className="lg:col-span-2 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 rounded-2xl flex items-start justify-between gap-4 shadow-sm animate-fade-in">
+                            <div className="flex items-start gap-3">
+                                <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-2xl shrink-0 mt-0.5">
+                                    price_change
+                                </span>
+                                <div>
+                                    <h4 className="font-bold text-amber-900 dark:text-amber-200 text-sm">
+                                        Se actualizaron precios de tu carrito
+                                    </h4>
+                                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5 mb-2">
+                                        Algunos productos cambiaron de precio o su oferta finalizó desde que los agregaste:
+                                    </p>
+                                    <ul className="space-y-1 text-xs text-amber-800 dark:text-amber-300/90 list-disc list-inside">
+                                        {notificacionesPrecio.map((notif, idx) => (
+                                            <li key={idx}>
+                                                <span className="font-semibold">{notif.nombre}</span>: 
+                                                {notif.eraOferta && !notif.esOferta ? ' la oferta finalizó' : ' nuevo precio'} 
+                                                {' '}(de {formatPrice(notif.precioAnterior)} a <span className="font-bold text-amber-950 dark:text-white">{formatPrice(notif.precioNuevo)}</span>)
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={limpiarNotificacionesPrecio}
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
+                                title="Cerrar aviso"
+                            >
+                                <span className="material-symbols-outlined text-lg">close</span>
+                            </button>
+                        </div>
+                    )}
+
                     {/* RESUMEN DEL PEDIDO */}
                     <div className="flex flex-col gap-6">
                         <section>
@@ -352,6 +423,100 @@ export const PantallaCheckout = ({ tiendaSlug }) => {
                         </div>
                     </div>
                 </div>
+            {/* MODAL ÉXITO DE PEDIDO POR TRANSFERENCIA */}
+            {pedidoTransferenciaExito && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden animate-scale-up">
+                        
+                        {/* Decoración superior */}
+                        <div className="w-20 h-20 bg-green-100 dark:bg-green-950/50 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="material-symbols-outlined text-4xl">check_circle</span>
+                        </div>
+
+                        <span className="inline-block px-3 py-1 bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold text-xs rounded-full uppercase tracking-wider mb-2">
+                            Paso final: Transferencia
+                        </span>
+
+                        <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1">
+                            ¡Pedido #{pedidoTransferenciaExito.id} generado!
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                            Transferí el total para que podamos preparar tu compra y enviártela.
+                        </p>
+
+                        {/* Tarjeta con los datos bancarios */}
+                        <div className="bg-slate-50 dark:bg-slate-800/80 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 text-left space-y-3.5 mb-6">
+                            <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
+                                <span className="text-xs uppercase font-bold text-slate-400">Total a transferir</span>
+                                <span className="text-xl font-black text-primary">
+                                    {formatPrice(pedidoTransferenciaExito.total)}
+                                </span>
+                            </div>
+
+                            {/* CBU */}
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">CBU / CVU</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => copiarAlPortapapeles(datosTienda?.cbu, 'cbu')}
+                                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                                    >
+                                        <span className="material-symbols-outlined text-[15px]">
+                                            {copiadoCampo === 'cbu' ? 'done' : 'content_copy'}
+                                        </span>
+                                        {copiadoCampo === 'cbu' ? '¡Copiado!' : 'Copiar CBU'}
+                                    </button>
+                                </div>
+                                <p className="font-mono text-sm bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-100 select-all break-all">
+                                    {datosTienda?.cbu || 'No disponible'}
+                                </p>
+                            </div>
+
+                            {/* Alias */}
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Alias</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => copiarAlPortapapeles(datosTienda?.alias, 'alias')}
+                                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                                    >
+                                        <span className="material-symbols-outlined text-[15px]">
+                                            {copiadoCampo === 'alias' ? 'done' : 'content_copy'}
+                                        </span>
+                                        {copiadoCampo === 'alias' ? '¡Copiado!' : 'Copiar Alias'}
+                                    </button>
+                                </div>
+                                <p className="font-mono text-sm bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-100 select-all">
+                                    {datosTienda?.alias || 'No disponible'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Botones de acción */}
+                        <div className="space-y-2.5">
+                            <a
+                                href={generarLinkWhatsapp(pedidoTransferenciaExito.id, pedidoTransferenciaExito.total)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-3.5 px-6 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 transition-all hover:-translate-y-0.5 text-base"
+                            >
+                                <span className="material-symbols-outlined text-2xl">chat</span>
+                                Enviar comprobante por WhatsApp
+                            </a>
+
+                            <button
+                                type="button"
+                                onClick={() => navigate('/mis-pedidos')}
+                                className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold text-sm transition-colors"
+                            >
+                                Ir a Mis Pedidos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             </main>
         </div>
     );

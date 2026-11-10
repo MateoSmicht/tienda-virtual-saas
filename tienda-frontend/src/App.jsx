@@ -166,7 +166,7 @@ function App() {
             <Route path="/favoritos" element={<StoreLayout tiendaSlug={subdominio}><PantallaFavoritos /></StoreLayout>} />
             {/* ✅ ASÍ DEBE QUEDAR */}
             <Route path="/checkout" element={<StoreLayout tiendaSlug={subdominio}><PantallaCheckout tiendaSlug={subdominio} /></StoreLayout>} />
-            <Route path="/mis-pedidos" element={<StoreLayout tiendaSlug={subdominio}><PantallaMisPedidos /></StoreLayout>} />
+            <Route path="/mis-pedidos" element={<StoreLayout tiendaSlug={subdominio}><PantallaMisPedidos tiendaSlug={subdominio} /></StoreLayout>} />
             
             <Route path="/login" element={<PantallaLoginCliente />} />
             <Route path="/reset-password" element={<PantallaResetPassword />} />

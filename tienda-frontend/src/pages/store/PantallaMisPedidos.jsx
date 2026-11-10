@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { traerMisPedidos } from "../../services/api";
+import { traerMisPedidos, traerDatosPublicosTienda } from "../../services/api";
 
-export const PantallaMisPedidos = () => {
+export const PantallaMisPedidos = ({ tiendaSlug }) => {
+    // Slug efectivo
+    const slugEfectivo = tiendaSlug || (window.location.hostname.includes('onrender.com') ? 'smisanperfumeria' : (window.location.hostname.endsWith('.localhost') ? window.location.hostname.replace('.localhost', '') : 'smisanperfumeria'));
+    const [datosTienda, setDatosTienda] = useState(null);
+    const [copiadoCampo, setCopiadoCampo] = useState(null);
     const [misPedidos, setMisPedidos] = useState([]);
     const [cargando, setCargando] = useState(true);
     
@@ -33,6 +37,34 @@ export const PantallaMisPedidos = () => {
         cargarPedidos(paginaActual);
         window.scrollTo(0, 0);
     }, [paginaActual]);
+
+    useEffect(() => {
+        const cargarTienda = async () => {
+            if (!slugEfectivo) return;
+            try {
+                const info = await traerDatosPublicosTienda(slugEfectivo);
+                setDatosTienda(info);
+            } catch (err) {
+                console.error("Error al cargar datos de la tienda:", err);
+            }
+        };
+        cargarTienda();
+    }, [slugEfectivo]);
+
+    const copiarAlPortapapeles = (texto, campo) => {
+        if (!texto) return;
+        navigator.clipboard.writeText(texto);
+        setCopiadoCampo(campo);
+        setTimeout(() => setCopiadoCampo(null), 2000);
+    };
+
+    const generarLinkWhatsapp = (nroPedido, montoTotal) => {
+        const telefono = (datosTienda?.whatsapp || '').replace(/\D/g, '');
+        const texto = encodeURIComponent(
+            `¡Hola! Te escribo por el Pedido #${nroPedido} (${formatPrice(montoTotal)}) realizado en ${datosTienda?.nombre || 'la tienda'}. Te adjunto el comprobante de transferencia.`
+        );
+        return telefono ? `https://wa.me/${telefono}?text=${texto}` : `https://wa.me/?text=${texto}`;
+    };
 
     const formatPrice = (price) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price || 0);
 
@@ -187,10 +219,74 @@ export const PantallaMisPedidos = () => {
                                             </div>
 
                                             {/* Resumen extra (Envío / Método de pago) */}
-                                            <div className="flex justify-between items-center mt-4 pt-4 border-t border-dashed border-slate-200 dark:border-slate-700">
-                                                <p className="text-xs text-slate-500">
-                                                    Método de pago: <strong className="text-slate-700 dark:text-slate-300">{pedido.metodoPago?.replace('_', ' ')}</strong>
-                                                </p>
+                                            <div className="mt-4 pt-4 border-t border-dashed border-slate-200 dark:border-slate-700 space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <p className="text-xs text-slate-500">
+                                                        Método de pago: <strong className="text-slate-700 dark:text-slate-300">{pedido.metodoPago?.replace('_', ' ')}</strong>
+                                                    </p>
+                                                </div>
+
+                                                {/* BLOQUE ESPECIAL SI ES TRANSFERENCIA PENDIENTE */}
+                                                {pedido.metodoPago === 'TRANSFERENCIA' && pedido.estado?.toUpperCase() === 'PENDIENTE' && (
+                                                    <div className="p-4 bg-amber-50/70 dark:bg-amber-950/30 rounded-2xl border border-amber-200 dark:border-amber-800/60 space-y-3">
+                                                        <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                                                            <span className="material-symbols-outlined text-xl">account_balance</span>
+                                                            <p className="text-xs font-bold uppercase tracking-wider">
+                                                                Datos para transferir y confirmar tu pedido:
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                                            {datosTienda?.cbu && (
+                                                                <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-amber-100 dark:border-slate-800 flex justify-between items-center gap-2">
+                                                                    <div className="min-w-0">
+                                                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">CBU / CVU</span>
+                                                                        <span className="font-mono font-bold text-slate-800 dark:text-slate-100 truncate block">{datosTienda.cbu}</span>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => copiarAlPortapapeles(datosTienda.cbu, `cbu-${pedido.id}`)}
+                                                                        className="p-1 text-primary hover:bg-primary/10 rounded"
+                                                                        title="Copiar CBU"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[16px]">
+                                                                            {copiadoCampo === `cbu-${pedido.id}` ? 'done' : 'content_copy'}
+                                                                        </span>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+
+                                                            {datosTienda?.alias && (
+                                                                <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-amber-100 dark:border-slate-800 flex justify-between items-center gap-2">
+                                                                    <div className="min-w-0">
+                                                                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Alias</span>
+                                                                        <span className="font-mono font-bold text-slate-800 dark:text-slate-100 truncate block">{datosTienda.alias}</span>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => copiarAlPortapapeles(datosTienda.alias, `alias-${pedido.id}`)}
+                                                                        className="p-1 text-primary hover:bg-primary/10 rounded"
+                                                                        title="Copiar Alias"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[16px]">
+                                                                            {copiadoCampo === `alias-${pedido.id}` ? 'done' : 'content_copy'}
+                                                                        </span>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <a
+                                                            href={generarLinkWhatsapp(pedido.id, pedido.total)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-2.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-xs shadow-md shadow-green-600/20 transition-all hover:scale-[1.01]"
+                                                        >
+                                                            <span className="material-symbols-outlined text-lg">chat</span>
+                                                            Enviar comprobante de transferencia por WhatsApp
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}
