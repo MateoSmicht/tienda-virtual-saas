@@ -2,6 +2,7 @@ package lumato.desarrolo.tiendavirtual.controller;
 
 import lumato.desarrolo.tiendavirtual.dto.CambiarPasswordDTO;
 import lumato.desarrolo.tiendavirtual.dto.EditarPerfilDTO;
+import lumato.desarrolo.tiendavirtual.dto.RegistroRequestDTO;
 import lumato.desarrolo.tiendavirtual.model.Usuario;
 import lumato.desarrolo.tiendavirtual.model.enums.Rol;
 import lumato.desarrolo.tiendavirtual.service.AuthService;
@@ -45,8 +46,18 @@ public class UsuarioController {
     }
 
     @PostMapping("/register")
-    public void register(@RequestBody Usuario user) {
-        service.addUser(user);
+    public ResponseEntity<?> registrarCliente(@RequestBody RegistroRequestDTO request) {
+        Usuario nuevoUsuario = new Usuario();
+        nuevoUsuario.setNombre(request.getNombre());
+        nuevoUsuario.setApellido(request.getApellido());
+        nuevoUsuario.setEmail(request.getEmail());
+        nuevoUsuario.setPassword(request.getPassword());
+        nuevoUsuario.setTelefono(request.getTelefono());
+
+        // Llamamos al servicio pasando el usuario y el slug de la tienda
+        service.addUser(nuevoUsuario, request.getTiendaSlug());
+
+        return ResponseEntity.ok(Map.of("mensaje", "Usuario registrado con éxito"));
     }
 
     @PutMapping("/user/{id}")

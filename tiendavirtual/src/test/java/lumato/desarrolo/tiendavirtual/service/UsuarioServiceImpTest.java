@@ -3,6 +3,7 @@ package lumato.desarrolo.tiendavirtual.service;
 import lumato.desarrolo.tiendavirtual.exception.EmailDuplicadoException;
 import lumato.desarrolo.tiendavirtual.model.Negocio;
 import lumato.desarrolo.tiendavirtual.model.Usuario;
+import lumato.desarrolo.tiendavirtual.repository.NegocioRepository; // 👈 Importamos el repositorio de negocios
 import lumato.desarrolo.tiendavirtual.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ class UsuarioServiceImpTest {
     private UsuarioRepository repository;
 
     @Mock
+    private NegocioRepository negocioRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -43,6 +47,7 @@ class UsuarioServiceImpTest {
     void setUp() {
         negocioFalso = new Negocio();
         negocioFalso.setId(1L);
+        negocioFalso.setSlug("smisanperfumeria");
         when(authService.obtenerNegocioDelUsuarioActual()).thenReturn(negocioFalso);
 
         usuarioFalso = new Usuario();
@@ -56,15 +61,21 @@ class UsuarioServiceImpTest {
     // ==========================================
     // TESTS DE CREAR USUARIO
     // ==========================================
-
     @Test
     void addUser_ConEmailNuevo_DebeEncriptarPassword_Y_Guardar() {
+        // 1. Configuramos el mock para que el repositorio encuentre la tienda mediante el slug
+        Negocio negocioVperfumery = new Negocio();
+        negocioVperfumery.setSlug("vperfumery");
+
         when(repository.findByEmail("mateo@lumato.com")).thenReturn(Optional.empty());
+        when(negocioRepository.findBySlug("vperfumery")).thenReturn(Optional.of(negocioVperfumery)); // 👈 Corregido el mock
         when(passwordEncoder.encode("clave123")).thenReturn("clave_encriptada_$$$");
 
-        usuarioService.addUser(usuarioFalso);
+        // 2. Pasamos ambos argumentos al método actualizado
+        usuarioService.addUser(usuarioFalso, "vperfumery");
 
         assertEquals("clave_encriptada_$$$", usuarioFalso.getPassword());
+        assertEquals(negocioVperfumery, usuarioFalso.getNegocio()); // Verificamos que se haya asignado el negocio correcto
         verify(repository, times(1)).save(usuarioFalso);
     }
 
@@ -74,8 +85,10 @@ class UsuarioServiceImpTest {
         otroUsuario.setEmail("mateo@lumato.com");
         when(repository.findByEmail("mateo@lumato.com")).thenReturn(Optional.of(otroUsuario));
 
+        // Como la validación del email duplicado ocurre antes de buscar la tienda,
+        // pasamos el slug y el método debe fallar inmediatamente por el email duplicado.
         assertThrows(EmailDuplicadoException.class, () -> {
-            usuarioService.addUser(usuarioFalso);
+            usuarioService.addUser(usuarioFalso, "vperfumery");
         });
 
         verify(repository, never()).save(any(Usuario.class));

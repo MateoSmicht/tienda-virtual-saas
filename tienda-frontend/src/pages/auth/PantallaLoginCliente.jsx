@@ -1,18 +1,30 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode";
 import { API_URL } from '../../services/api';
 
-export const PantallaLoginCliente = () => {
+export const PantallaLoginCliente = ({ tiendaSlug: tiendaSlugProp }) => {
+    const params = useParams();
     const navigate = useNavigate();
-    const [isLogin, setIsLogin] = useState(true); 
-    
+
+    // Función para extraer "vperfumery" de "vperfumery.localhost"
+    const obtenerSlugDeSubdominio = () => {
+        const host = window.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') return null;
+        return host.split('.')[0];
+    };
+
+    // Respaldo triple: 1° por Props -> 2° por URL (/tienda/:slug) -> 3° por Subdominio (slug.localhost)
+    const tiendaSlug = tiendaSlugProp || params.tiendaSlug || obtenerSlugDeSubdominio();
+
+
+    const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [nombre, setNombre] = useState(''); 
-    const [apellido, setApellido] = useState(''); 
-    const [telefono, setTelefono] = useState(''); 
-    
+    const [nombre, setNombre] = useState('');
+    const [apellido, setApellido] = useState('');
+    const [telefono, setTelefono] = useState('');
+
     const [aceptaTerminos, setAceptaTerminos] = useState(false);
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState(null);
@@ -34,22 +46,22 @@ export const PantallaLoginCliente = () => {
 
                 if (response.ok) {
                     const data = await response.json();
-                    
+
                     localStorage.setItem('token', data.token);
-                    
+
                     try {
                         const tokenDecodificado = jwtDecode(data.token);
                         const rol = tokenDecodificado.rol || tokenDecodificado.role;
 
                         if (rol === 'ADMIN') {
-                            navigate('/dashboard'); 
+                            navigate('/dashboard');
                         } else {
-                            navigate('/'); 
+                            navigate('/');
                         }
                     } catch (e) {
                         navigate('/');
                     }
-                    
+
                 } else if (response.status === 401 || response.status === 403) {
                     setError("Email o contraseña incorrectos.");
                 } else {
@@ -57,16 +69,17 @@ export const PantallaLoginCliente = () => {
                 }
 
             } else {
+                console.log("Enviando registro con tiendaSlug:", tiendaSlug);
                 const response = await fetch(`${API_URL}/api/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre, apellido, email, password, telefono }) 
+                    body: JSON.stringify({ nombre, apellido, email, password, telefono, tiendaSlug })
                 });
 
                 if (response.ok) {
                     setIsLogin(true);
                     setMensajeExito("¡Cuenta creada con éxito! Ya podés iniciar sesión.");
-                    setPassword(''); 
+                    setPassword('');
                 } else {
                     const errorMsg = await response.text();
                     setError(errorMsg || "Error al crear la cuenta. El email podría estar en uso.");
@@ -81,17 +94,17 @@ export const PantallaLoginCliente = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-4 font-display">
-            
+
             <Link to="/" className="fixed top-6 left-6 flex items-center gap-2 text-slate-500 hover:text-primary dark:hover:text-white font-bold transition-colors bg-white/50 dark:bg-slate-800/50 backdrop-blur-md px-4 py-2 rounded-full shadow-sm z-50">
                 <span className="material-symbols-outlined">arrow_back</span> Volver
             </Link>
 
             <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800 animate-fade-in my-8">
-                
+
                 <div className="bg-primary p-8 text-center text-white relative overflow-hidden">
                     <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
                     <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-black/10 rounded-full blur-2xl"></div>
-                    
+
                     <div className="relative z-10">
                         <div className="inline-flex items-center justify-center rounded-2xl bg-white/20 p-3 mb-4 backdrop-blur-sm shadow-inner">
                             <span className="material-symbols-outlined text-4xl">fragrance</span>
@@ -104,13 +117,13 @@ export const PantallaLoginCliente = () => {
                 </div>
 
                 <div className="flex border-b border-slate-100 dark:border-slate-800">
-                    <button 
+                    <button
                         onClick={() => { setIsLogin(true); setError(null); setMensajeExito(null); }}
                         className={`flex-1 py-4 text-sm font-bold transition-colors ${isLogin ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                     >
                         Iniciar Sesión
                     </button>
-                    <button 
+                    <button
                         onClick={() => { setIsLogin(false); setError(null); setMensajeExito(null); }}
                         className={`flex-1 py-4 text-sm font-bold transition-colors ${!isLogin ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                     >
@@ -119,7 +132,7 @@ export const PantallaLoginCliente = () => {
                 </div>
 
                 <form onSubmit={manejarSubmit} className="p-8">
-                    
+
                     {error && (
                         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3 text-red-600 dark:text-red-400 text-sm font-medium animate-shake">
                             <span className="material-symbols-outlined shrink-0">error</span>
@@ -137,8 +150,8 @@ export const PantallaLoginCliente = () => {
                         <div className="flex gap-4 mb-4">
                             <div className="flex-1">
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Nombre</label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     required={!isLogin}
                                     value={nombre}
                                     onChange={(e) => setNombre(e.target.value)}
@@ -147,8 +160,8 @@ export const PantallaLoginCliente = () => {
                             </div>
                             <div className="flex-1">
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Apellido</label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     required={!isLogin}
                                     value={apellido}
                                     onChange={(e) => setApellido(e.target.value)}
@@ -163,8 +176,8 @@ export const PantallaLoginCliente = () => {
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Teléfono</label>
                             <div className="relative">
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">phone</span>
-                                <input 
-                                    type="tel" 
+                                <input
+                                    type="tel"
                                     required={!isLogin}
                                     value={telefono}
                                     onChange={(e) => setTelefono(e.target.value)}
@@ -179,8 +192,8 @@ export const PantallaLoginCliente = () => {
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Email</label>
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">mail</span>
-                            <input 
-                                type="email" 
+                            <input
+                                type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -194,8 +207,8 @@ export const PantallaLoginCliente = () => {
                         <div className="flex items-center justify-between mb-2">
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Contraseña</label>
                             {isLogin && (
-                                <Link 
-                                    to="/recuperar-password" 
+                                <Link
+                                    to="/recuperar-password"
                                     className="text-xs font-bold text-primary hover:text-primary/80 transition-colors"
                                 >
                                     ¿Olvidaste tu clave?
@@ -204,8 +217,8 @@ export const PantallaLoginCliente = () => {
                         </div>
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">lock</span>
-                            <input 
-                                type="password" 
+                            <input
+                                type="password"
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -224,7 +237,7 @@ export const PantallaLoginCliente = () => {
                     {!isLogin && (
                         <div className="mb-6">
                             <label className="flex items-start gap-3 cursor-pointer group">
-                                <input 
+                                <input
                                     type="checkbox"
                                     checked={aceptaTerminos}
                                     onChange={(e) => setAceptaTerminos(e.target.checked)}
@@ -244,8 +257,8 @@ export const PantallaLoginCliente = () => {
                         </div>
                     )}
 
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={cargando || (!isLogin && !aceptaTerminos)}
                         className={`w-full py-3.5 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 shadow-lg 
                             ${(cargando || (!isLogin && !aceptaTerminos)) ? 'bg-primary/70 cursor-not-allowed shadow-none' : 'bg-primary hover:bg-primary/90 shadow-primary/30 hover:-translate-y-0.5'}`}
@@ -256,7 +269,7 @@ export const PantallaLoginCliente = () => {
                             <>{isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'} <span className="material-symbols-outlined text-[20px]">{isLogin ? 'login' : 'person_add'}</span></>
                         )}
                     </button>
-                    
+
                 </form>
             </div>
         </div>

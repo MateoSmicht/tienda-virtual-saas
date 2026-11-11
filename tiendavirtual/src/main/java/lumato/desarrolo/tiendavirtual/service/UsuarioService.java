@@ -11,7 +11,9 @@ public interface UsuarioService {
     Usuario getUser(Long id);
     List<Usuario> getAllUsers();
     void removeUser(Long id);
-    void addUser(Usuario user);
+
+    void addUser(Usuario user, String tiendaSlug);
+
     void updateUser(Long id, Usuario updateUser);
     List<Usuario> searchUser(String termino);
     void cambiarPassword(Long id, String passwordActual, String passwordNueva);

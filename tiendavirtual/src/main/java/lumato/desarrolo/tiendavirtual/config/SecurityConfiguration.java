@@ -42,7 +42,7 @@ public class SecurityConfiguration {
                     // 1. RUTAS 100% PÚBLICAS (No requieren token)
                     request.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html","/api/health").permitAll();
                     request.requestMatchers("/api/register", "/api/auth/login", "/api/auth/recuperar-password",
-                            "/api/productos/publico/", "/api/categorias/publico/", "/api/banner/publico/","/api/auth/reset-password","/api/negocios/publico/").permitAll();
+                            "/api/productos/publico/", "/api/categorias/publico/", "/api/banner/publico/","/api/auth/reset-password","/api/negocios/publico/**").permitAll();
                     request.requestMatchers("/api/pagos/notificacion").permitAll(); // Webhook de Mercado Pago
 
                     // 2. E-COMMERCE PÚBLICO (Cualquiera puede VER los productos de la tienda)

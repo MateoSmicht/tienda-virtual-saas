@@ -5,6 +5,7 @@ import lumato.desarrolo.tiendavirtual.exception.EmailDuplicadoException;
 import lumato.desarrolo.tiendavirtual.model.Negocio;
 import lumato.desarrolo.tiendavirtual.model.Usuario;
 import lumato.desarrolo.tiendavirtual.model.enums.Rol;
+import lumato.desarrolo.tiendavirtual.repository.NegocioRepository;
 import lumato.desarrolo.tiendavirtual.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +24,9 @@ public class UsuarioServiceImp implements UsuarioService {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private NegocioRepository negocioRepository;
 
     @Override
     public Usuario getUser(Long id) {
@@ -47,14 +51,16 @@ public class UsuarioServiceImp implements UsuarioService {
     }
 
     @Override
-    public void addUser(Usuario user) {
+    public void addUser(Usuario user, String tiendaSlug) {
         if (repository.findByEmail(user.getEmail()).isPresent()) {
             throw new EmailDuplicadoException("El email " + user.getEmail() + " ya está registrado en otra cuenta.");
         }
 
-        Negocio negocioActual = authService.obtenerNegocioDelUsuarioActual();
-        user.setNegocio(negocioActual);
+        // Buscamos el negocio correspondiente a la tienda actual del SaaS
+        Negocio negocioActual = negocioRepository.findBySlug(tiendaSlug)
+                .orElseThrow(() -> new RuntimeException("No se encontró la tienda especificada"));
 
+        user.setNegocio(negocioActual);
         user.setRol(Rol.CLIENTE);
 
         String hashPassword = passwordEncoder.encode(user.getPassword());
