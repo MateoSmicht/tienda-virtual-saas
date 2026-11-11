@@ -143,7 +143,18 @@ export const PantallaCheckout = ({ tiendaSlug }) => {
                     navigate('/mis-pedidos'); 
                 }
             } else {
-                alert("Hubo un error al procesar tu pedido en el servidor.");
+                let errorDetalle = "Hubo un error al procesar tu pedido en el servidor.";
+                try {
+                    const errorJson = await response.json();
+                    errorDetalle = errorJson.message || errorJson.error || JSON.stringify(errorJson);
+                } catch {
+                    try {
+                        const errorTexto = await response.text();
+                        if (errorTexto) errorDetalle = errorTexto;
+                    } catch {}
+                }
+                console.error("Detalle del error 400:", errorDetalle, "Status:", response.status);
+                alert(`Error al procesar el pedido (${response.status}): ${errorDetalle}`);
             }
         } catch (error) {
             console.error("Error al generar pedido:", error);
