@@ -61,6 +61,31 @@ public class UsuarioServiceImp implements UsuarioService {
                 .orElseThrow(() -> new RuntimeException("No se encontró la tienda especificada"));
 
         user.setNegocio(negocioActual);
+
+        // 1. GESTIÓN DEL ROL: Si viene desde el panel (ej: ADMIN), lo respetamos.
+        // Si viene nulo, asignamos CLIENTE.
+        if (user.getRol() == null) {
+            user.setRol(Rol.CLIENTE);
+        }
+
+        String hashPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(hashPassword);
+
+        repository.save(user);
+    }
+
+    @Override
+    public void registrarNuevoClienteWeb(Usuario user, String tiendaSlug) {
+        if (repository.findByEmail(user.getEmail()).isPresent()) {
+            throw new EmailDuplicadoException("El email " + user.getEmail() + " ya está registrado en otra cuenta.");
+        }
+
+        Negocio negocioActual = negocioRepository.findBySlug(tiendaSlug)
+                .orElseThrow(() -> new RuntimeException("No se encontró la tienda especificada"));
+
+        user.setNegocio(negocioActual);
+
+
         user.setRol(Rol.CLIENTE);
 
         String hashPassword = passwordEncoder.encode(user.getPassword());
@@ -71,12 +96,33 @@ public class UsuarioServiceImp implements UsuarioService {
 
     @Override
     public void updateUser(Long id, Usuario updateUser) {
+        // 1. Buscamos el usuario original de la BD
         Usuario existente = getUser(id);
         if (existente == null) throw new RuntimeException("Usuario no encontrado");
 
-        updateUser.setId(existente.getId());
-        updateUser.setNegocio(existente.getNegocio());
-        repository.save(updateUser);
+        // 2. Validamos si cambió el email para evitar duplicados
+        if (!existente.getEmail().equals(updateUser.getEmail()) &&
+                repository.findByEmail(updateUser.getEmail()).isPresent()) {
+            throw new EmailDuplicadoException("El email ya está registrado en otra cuenta.");
+        }
+
+        // 3. Actualizamos los datos básicos
+        existente.setNombre(updateUser.getNombre());
+        existente.setApellido(updateUser.getApellido());
+        existente.setEmail(updateUser.getEmail());
+        existente.setTelefono(updateUser.getTelefono());
+
+        // 4. Actualizamos el rol si viene en la petición
+        if (updateUser.getRol() != null) {
+            existente.setRol(updateUser.getRol());
+        }
+
+        // 5. Mantenemos la contraseña antigua si el frontend la envía vacía
+        if (updateUser.getPassword() != null && !updateUser.getPassword().trim().isEmpty()) {
+            existente.setPassword(passwordEncoder.encode(updateUser.getPassword()));
+        }
+
+        repository.save(existente);
     }
 
     @Override

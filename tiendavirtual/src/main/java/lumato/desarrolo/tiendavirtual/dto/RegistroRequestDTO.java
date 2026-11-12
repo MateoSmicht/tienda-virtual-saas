@@ -1,7 +1,9 @@
 package lumato.desarrolo.tiendavirtual.dto;
 
 
-
+import lombok.Data;
+import lumato.desarrolo.tiendavirtual.model.enums.Rol;
+@Data
 public class RegistroRequestDTO {
     private String nombre;
     private String apellido;
@@ -9,6 +11,7 @@ public class RegistroRequestDTO {
     private String password;
     private String telefono;
     private String tiendaSlug;
+    private Rol rol;
 
     // Getters y Setters
     public String getNombre() { return nombre; }

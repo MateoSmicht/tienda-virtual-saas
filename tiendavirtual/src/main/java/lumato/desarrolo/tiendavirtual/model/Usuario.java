@@ -36,7 +36,7 @@ public class Usuario {
     @NotBlank(message = "La password no puede estar vacío")
     @Column(length = 255, nullable = false)
     private String password;
-    @JsonIgnore
+
     private Rol rol;
     @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER)

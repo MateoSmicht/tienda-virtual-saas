@@ -1,24 +1,39 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom'; // 1. Importamos useParams
 import { fetchConToken } from '../../services/api'; 
 
-const PantallaClientes = () => {
+// 2. Recibimos tiendaSlug como prop (por si acaso)
+const PantallaClientes = ({ tiendaSlug: tiendaSlugProp }) => {
   const [clientes, setClientes] = useState([]);
   const [cargando, setCargando] = useState(true);
-  
   const [busqueda, setBusqueda] = useState('');
 
-  const [clienteActual, setClienteActual] = useState({
+  // 3. Lógica para extraer el slug de la URL o del subdominio
+  const params = useParams();
+  
+  const obtenerSlugDeSubdominio = () => {
+      const host = window.location.hostname;
+      if (host === 'localhost' || host === '127.0.0.1') return null;
+      return host.split('.')[0];
+  };
+
+  const tiendaSlug = tiendaSlugProp || params.tiendaSlug || obtenerSlugDeSubdominio();
+
+  // 4. Agregamos 'rol' al estado inicial
+  const estadoInicial = {
     id: null,
     nombre: '',
     apellido: '',
     email: '',
     telefono: '',
-    password: '' 
-  });
-  
+    password: '',
+    rol: 'USER' // Por defecto será usuario/cliente
+  };
+
+  const [clienteActual, setClienteActual] = useState(estadoInicial);
   const [modoEdicion, setModoEdicion] = useState(false);
 
-  // 1. TRAER TODOS LOS CLIENTES (GET /user)
+  // TRAER TODOS LOS CLIENTES
   const cargarClientes = () => {
     fetchConToken('/user') 
       .then(res => res.json())
@@ -36,7 +51,6 @@ const PantallaClientes = () => {
     cargarClientes();
   }, []);
 
-  // 2. MAGIA DE VELOCIDAD: Saltar con Enter
   const saltarConEnter = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -50,27 +64,33 @@ const PantallaClientes = () => {
     }
   };
 
-  // 3. GUARDAR (POST /register  o  PUT /user/{id})
-  const guardarCliente = async (e) => {
+  // GUARDAR CLIENTE
+const guardarCliente = async (e) => {
     e.preventDefault();
     
-   
+    // CAMBIO AQUÍ: Cambiamos '/register' por '/user'
     const url = modoEdicion 
       ? `/user/${clienteActual.id}` 
-      : '/register';
+      : '/user'; 
       
     const metodo = modoEdicion ? 'PUT' : 'POST';
+    // ...
+
+    // 5. Inyectamos el tiendaSlug en el payload (crucial para /register)
+    const payload = {
+        ...clienteActual,
+        tiendaSlug: tiendaSlug 
+    };
 
     try {
       const response = await fetchConToken(url, {
         method: metodo,
-        body: JSON.stringify(clienteActual)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
         alert(modoEdicion ? "¡Cliente actualizado!" : "¡Cliente registrado con éxito!");
-        
-        setClienteActual({ id: null, nombre: '', apellido: '', email: '', telefono: '', password: '' });
+        setClienteActual(estadoInicial);
         setModoEdicion(false);
         cargarClientes(); 
         setTimeout(() => document.getElementById('input-nombre')?.focus(), 100);
@@ -82,7 +102,7 @@ const PantallaClientes = () => {
     }
   };
 
-  // 4. PREPARAR EDICIÓN
+  // PREPARAR EDICIÓN
   const iniciarEdicion = (cli) => {
     setClienteActual({ 
       id: cli.id, 
@@ -90,22 +110,22 @@ const PantallaClientes = () => {
       apellido: cli.apellido || '', 
       email: cli.email || '', 
       telefono: cli.telefono || '',
-      password: '' 
+      password: '', // Se deja vacío por seguridad
+      rol: cli.rol || 'USER' // Cargamos el rol que traiga de BD
     });
     setModoEdicion(true);
     document.getElementById('input-nombre')?.focus();
   };
 
   const cancelarEdicion = () => {
-    setClienteActual({ id: null, nombre: '', apellido: '', email: '', telefono: '', password: '' });
+    setClienteActual(estadoInicial);
     setModoEdicion(false);
   };
 
-  // 5. ELIMINAR (DELETE /user/{id})
+  // ELIMINAR CLIENTE
   const eliminarCliente = async (id) => {
     if (window.confirm("¿Seguro que querés eliminar a este cliente? Esta acción es irreversible.")) {
       try {
-
         const response = await fetchConToken(`/user/${id}`, { method: 'DELETE' });
         
         if (response.ok || response.status === 204) {
@@ -127,7 +147,7 @@ const PantallaClientes = () => {
     });
   };
 
-  // 6. LÓGICA DEL BUSCADOR
+  // LÓGICA DEL BUSCADOR
   const clientesFiltrados = clientes.filter(cli => {
     if (!busqueda) return true;
     const termino = busqueda.toLowerCase();
@@ -140,8 +160,8 @@ const PantallaClientes = () => {
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Gestión de Clientes</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Administre la base de datos de usuarios y contactos.</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Gestión de Usuarios</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Administre la base de datos de usuarios y administradores.</p>
         </div>
         
         {/* BUSCADOR */}
@@ -165,7 +185,7 @@ const PantallaClientes = () => {
             
             <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
               <span className="material-symbols-outlined text-teal-600">{modoEdicion ? 'manage_accounts' : 'person_add'}</span>
-              {modoEdicion ? 'Editar Cliente' : 'Nuevo Cliente'}
+              {modoEdicion ? 'Editar Usuario' : 'Nuevo Usuario'}
             </h2>
 
             <form onSubmit={guardarCliente} className="space-y-4">
@@ -192,11 +212,22 @@ const PantallaClientes = () => {
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Teléfono</label>
-                <input name="telefono" type="text" value={clienteActual.telefono} onChange={handleChange} onKeyDown={saltarConEnter}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white transition-all outline-none"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Teléfono</label>
+                  <input name="telefono" type="text" value={clienteActual.telefono} onChange={handleChange} onKeyDown={saltarConEnter}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white transition-all outline-none"
+                  />
+                </div>
+
+                {/* 6. SELECTOR DE ROL */}
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Rol</label>
+                  <select name="rol" value={clienteActual.rol} onChange={handleChange} className="w-full px-4 py-2.5 ...">
+                    <option value="CLIENTE">Cliente</option>
+                    <option value="ADMIN">Administrador</option>
+                  </select>
+                </div>
               </div>
 
               {/* La contraseña solo la pedimos si es un cliente NUEVO */}
@@ -212,7 +243,7 @@ const PantallaClientes = () => {
               <div className="pt-4 flex flex-col gap-2">
                 <button id="btn-guardar-cliente" type="submit" className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95">
                   <span className="material-symbols-outlined text-[20px]">{modoEdicion ? 'save' : 'add'}</span>
-                  {modoEdicion ? 'Guardar Cambios' : 'Registrar Cliente'}
+                  {modoEdicion ? 'Guardar Cambios' : 'Registrar Usuario'}
                 </button>
                 
                 {modoEdicion && (
@@ -229,7 +260,7 @@ const PantallaClientes = () => {
         <div className="md:col-span-8">
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800 dark:text-slate-200">Listado de Clientes</h3>
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200">Listado de Usuarios</h3>
               <span className="text-xs font-bold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full">
                 {clientesFiltrados.length} Registros
               </span>
@@ -239,7 +270,7 @@ const PantallaClientes = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-500 uppercase tracking-widest bg-white dark:bg-slate-900">
-                    <th className="px-6 py-4">Cliente</th>
+                    <th className="px-6 py-4">Usuario</th>
                     <th className="px-6 py-4">Contacto</th>
                     <th className="px-6 py-4 text-right">Acciones</th>
                   </tr>
@@ -253,15 +284,23 @@ const PantallaClientes = () => {
                     clientesFiltrados.map(cli => (
                       <tr key={cli.id} className={`transition-colors group ${clienteActual.id === cli.id ? 'bg-teal-50 dark:bg-teal-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
                         
-                        {/* Nombre y Avatar */}
+                        {/* Nombre, Avatar y Rol */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="size-10 rounded-full bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center text-teal-700 dark:text-teal-400 font-bold text-lg border border-teal-200 dark:border-teal-800/50">
                               {cli.nombre ? cli.nombre.charAt(0).toUpperCase() : 'U'}
                             </div>
                             <div className="flex flex-col">
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">
+                              <span className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 {cli.nombre} {cli.apellido}
+                                
+                                {/* 7. BADGE DE ROL */}
+                                {cli.rol === 'ADMIN' ? (
+                                  <span className="text-[9px] uppercase tracking-wider font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 px-1.5 py-0.5 rounded">Admin</span>
+                                ) : (
+                                  <span className="text-[9px] uppercase tracking-wider font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 px-1.5 py-0.5 rounded">Cliente</span>
+                                )}
+
                               </span>
                               <span className="text-[10px] text-slate-400">ID: #{cli.id}</span>
                             </div>

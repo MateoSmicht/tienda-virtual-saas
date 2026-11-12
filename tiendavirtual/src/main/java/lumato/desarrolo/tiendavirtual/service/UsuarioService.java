@@ -19,4 +19,6 @@ public interface UsuarioService {
     void cambiarPassword(Long id, String passwordActual, String passwordNueva);
     void actualizarPerfil(Long id, EditarPerfilDTO dto);
     void modificarRol(Long id, Rol rol);
+
+    void registrarNuevoClienteWeb(Usuario nuevoUsuario, String tiendaSlug);
 }

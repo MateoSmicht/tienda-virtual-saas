@@ -22,12 +22,11 @@ public class UsuarioController {
     @Autowired
     private UsuarioService service;
 
-    // INYECTAMOS NUESTRO CEREBRO DE SEGURIDAD
     @Autowired
     private AuthService authService;
 
     // =================================================================
-    // ENDPOINTS DE ADMINISTRACIÓN (Debe protegerse en SecurityFilterChain para rol ADMIN)
+    // ENDPOINTS DE ADMINISTRACIÓN Y LECTURA
     // =================================================================
 
     @GetMapping("/user/{id}")
@@ -45,8 +44,18 @@ public class UsuarioController {
         service.removeUser(id);
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<?> registrarCliente(@RequestBody RegistroRequestDTO request) {
+    @PutMapping("/user/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Usuario usuarioActualizado) {
+        service.updateUser(id, usuarioActualizado);
+        return ResponseEntity.ok(Map.of("mensaje", "Usuario actualizado con éxito"));
+    }
+
+    // =================================================================
+    // 1. ENDPOINT PRIVADO (PANEL DE CONTROL)
+    // Usado por PantallaClientes.jsx. Respeta el Rol enviado (ADMIN/CLIENTE).
+    // =================================================================
+    @PostMapping("/user")
+    public ResponseEntity<?> crearUsuarioDesdePanel(@RequestBody RegistroRequestDTO request) {
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setNombre(request.getNombre());
         nuevoUsuario.setApellido(request.getApellido());
@@ -54,71 +63,30 @@ public class UsuarioController {
         nuevoUsuario.setPassword(request.getPassword());
         nuevoUsuario.setTelefono(request.getTelefono());
 
-        // Llamamos al servicio pasando el usuario y el slug de la tienda
+        // Asignamos el rol que viene desde el <select> del frontend
+        nuevoUsuario.setRol(request.getRol());
+
         service.addUser(nuevoUsuario, request.getTiendaSlug());
 
-        return ResponseEntity.ok(Map.of("mensaje", "Usuario registrado con éxito"));
-    }
-
-    @PutMapping("/user/{id}")
-    public void updateUser(@PathVariable Long id, @RequestBody Usuario updateUser) {
-        service.updateUser(id, updateUser);
-    }
-
-    @GetMapping("/buscar")
-    public ResponseEntity<List<Usuario>> buscarClientes(@RequestParam String termino) {
-        return ResponseEntity.ok(service.searchUser(termino));
-    }
-
-    @PutMapping("/user/{id}/rol")
-    public ResponseEntity<?> modificarRol(@PathVariable Long id, @RequestParam Rol rol) {
-        try {
-            service.modificarRol(id, rol);
-            return ResponseEntity.ok(Map.of("mensaje", "Rol actualizado correctamente a " + rol));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(Map.of("mensaje", "Usuario creado con éxito desde el panel"));
     }
 
     // =================================================================
-    // ENDPOINTS DE PERFIL PERSONAL (Anti-IDOR usando AuthService)
+    // 2. ENDPOINT PÚBLICO (STOREFRONT)
+    // Usado por PantallaLoginCliente.jsx. Fuerza siempre el rol a CLIENTE.
     // =================================================================
+    @PostMapping("/register")
+    public ResponseEntity<?> registrarClientePublico(@RequestBody RegistroRequestDTO request) {
+        Usuario nuevoUsuario = new Usuario();
+        nuevoUsuario.setNombre(request.getNombre());
+        nuevoUsuario.setApellido(request.getApellido());
+        nuevoUsuario.setEmail(request.getEmail());
+        nuevoUsuario.setPassword(request.getPassword());
+        nuevoUsuario.setTelefono(request.getTelefono());
 
-    @GetMapping("/user/me")
-    public ResponseEntity<?> obtenerMiPerfil(@RequestHeader("Authorization") String authHeader) {
-        // Mirá qué limpio queda: el servicio hace todo el trabajo
-        Usuario usuario = authService.obtenerUsuarioDelToken(authHeader);
-        return ResponseEntity.ok(usuario);
-    }
+        // Usamos el método blindado de seguridad
+        service.registrarNuevoClienteWeb(nuevoUsuario, request.getTiendaSlug());
 
-    @PutMapping("/user/me")
-    public ResponseEntity<?> actualizarMiPerfil(
-            @RequestHeader("Authorization") String authHeader,
-            @RequestBody EditarPerfilDTO dto) {
-        try {
-            Usuario usuario = authService.obtenerUsuarioDelToken(authHeader);
-            service.actualizarPerfil(usuario.getId(), dto);
-
-            return ResponseEntity.ok(Map.of("mensaje", "Perfil actualizado correctamente"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @PutMapping("/user/me/password")
-    public ResponseEntity<?> cambiarMiPassword(
-            @RequestHeader("Authorization") String authHeader,
-            @RequestBody CambiarPasswordDTO dto) {
-        try {
-            Usuario usuario = authService.obtenerUsuarioDelToken(authHeader);
-            service.cambiarPassword(usuario.getId(), dto.getPasswordActual(), dto.getPasswordNueva());
-
-            return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada con éxito"));
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body(Map.of("error", "Token inválido o expirado"));
-        }
+        return ResponseEntity.ok(Map.of("mensaje", "Cliente registrado con éxito"));
     }
 }
