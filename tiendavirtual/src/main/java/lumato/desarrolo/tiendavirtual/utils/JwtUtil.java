@@ -10,7 +10,9 @@ import java.util.Date;
 
 public class JwtUtil {
 
-    private static final String SECRET_KEY = "gj43jng9";
+    private static final String SECRET_KEY = System.getenv("JWT_SECRET") != null && !System.getenv("JWT_SECRET").isBlank()
+            ? System.getenv("JWT_SECRET")
+            : "lumato_super_secret_jwt_key_2026_secure_tokens_99418291";
     private static final Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY);
 
     public static String generateToken(Usuario user) {

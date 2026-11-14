@@ -40,15 +40,17 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(request -> {
                     // 1. RUTAS 100% PÚBLICAS (No requieren token)
-                    request.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html","/api/health").permitAll();
+                    request.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api/health")
+                            .permitAll();
                     request.requestMatchers("/api/register", "/api/auth/login", "/api/auth/recuperar-password",
-                            "/api/productos/publico/", "/api/categorias/publico/", "/api/banner/publico/","/api/auth/reset-password","/api/negocios/publico/**").permitAll();
+                            "/api/productos/publico/**", "/api/categorias/publico/**", "/api/banner/publico/**",
+                            "/api/auth/reset-password", "/api/negocios/publico/**").permitAll();
                     request.requestMatchers("/api/pagos/notificacion").permitAll(); // Webhook de Mercado Pago
 
                     // 2. E-COMMERCE PÚBLICO (Cualquiera puede VER los productos de la tienda)
-                    request.requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll();
-                    request.requestMatchers(HttpMethod.GET, "/api/categorias/**").permitAll();
-                    request.requestMatchers(HttpMethod.GET, "/api/banner/**").permitAll();
+                    request.requestMatchers(HttpMethod.GET, "/api/productos/publico/**").permitAll();
+                    request.requestMatchers(HttpMethod.GET, "/api/categorias/publico/**").permitAll();
+                    request.requestMatchers(HttpMethod.GET, "/api/banner/publico/**").permitAll();
 
                     // 3. MI PERFIL (Cualquier usuario logueado, sea admin, cajero o cliente)
                     request.requestMatchers("/api/user/me/**").authenticated();
@@ -56,20 +58,32 @@ public class SecurityConfiguration {
                     request.requestMatchers(HttpMethod.GET, "/api/pedidos/mis-pedidos").authenticated();
 
                     // 4. CAJA Y MOSTRADOR (Solo empleados)
-                    // Nota: Usamos hasAuthority en vez de hasRole para evitar problemas con el prefijo "ROLE_"
+                    // Nota: Usamos hasAuthority en vez de hasRole para evitar problemas con el
+                    // prefijo "ROLE_"
                     request.requestMatchers("/api/caja/**").hasAnyAuthority("ADMIN", "CAJERO");
-                    request.requestMatchers(HttpMethod.GET, "/api/buscar").hasAnyAuthority("ADMIN", "CAJERO"); // Para buscar clientes
+                    request.requestMatchers(HttpMethod.GET, "/api/buscar").hasAnyAuthority("ADMIN", "CAJERO"); // Para
+                                                                                                               // buscar
+                                                                                                               // clientes
+                    request.requestMatchers("/api/stock/**").hasAnyAuthority("ADMIN", "CAJERO");
 
                     // 5. ADMINISTRACIÓN PURA (Solo el dueño)
                     request.requestMatchers("/api/estadisticas/**").hasAuthority("ADMIN");
+                    request.requestMatchers("/api/proveedores/**").hasAuthority("ADMIN");
+                    request.requestMatchers(HttpMethod.GET, "/api/productos/**").hasAnyAuthority("ADMIN", "CAJERO");
                     request.requestMatchers(HttpMethod.POST, "/api/productos/**").hasAuthority("ADMIN");
                     request.requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAuthority("ADMIN");
                     request.requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAuthority("ADMIN");
+                    request.requestMatchers(HttpMethod.GET, "/api/categorias/**").hasAnyAuthority("ADMIN", "CAJERO");
                     request.requestMatchers(HttpMethod.POST, "/api/categorias/**").hasAuthority("ADMIN");
                     request.requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasAuthority("ADMIN");
                     request.requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasAuthority("ADMIN");
+                    request.requestMatchers(HttpMethod.GET, "/api/banner/**").hasAuthority("ADMIN");
+                    request.requestMatchers(HttpMethod.POST, "/api/banner/**").hasAuthority("ADMIN");
+                    request.requestMatchers(HttpMethod.PUT, "/api/banner/**").hasAuthority("ADMIN");
+                    request.requestMatchers(HttpMethod.DELETE, "/api/banner/**").hasAuthority("ADMIN");
 
                     // Gestión de otros usuarios
+                    request.requestMatchers(HttpMethod.POST, "/api/user/**").hasAuthority("ADMIN");
                     request.requestMatchers(HttpMethod.GET, "/api/user/**").hasAuthority("ADMIN");
                     request.requestMatchers(HttpMethod.PUT, "/api/user/**").hasAuthority("ADMIN");
                     request.requestMatchers(HttpMethod.DELETE, "/api/user/**").hasAuthority("ADMIN");
@@ -86,13 +100,15 @@ public class SecurityConfiguration {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        //configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000","http://vperfumery.localhost:5173",
-          //      "http://vperfumery.localhost:3000"));
+        // configuration.setAllowedOrigins(List.of("http://localhost:5173",
+        // "http://localhost:3000","http://vperfumery.localhost:5173",
+        // "http://vperfumery.localhost:3000"));
 
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://*.localhost:*",
-                "https://*.onrender.com" // Esto permite automáticamente cualquier subdominio en Render (ej: *.tienda-frontend-hocm.onrender.com o el dominio final que uses)
+                "https://*.onrender.com" // Esto permite automáticamente cualquier subdominio en Render (ej:
+                                         // *.tienda-frontend-hocm.onrender.com o el dominio final que uses)
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));

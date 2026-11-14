@@ -400,7 +400,7 @@ export const PantallaCheckout = ({ tiendaSlug }) => {
                                 )}
 
                                 {/* 3. Opción Efectivo */}
-                               {/* <label className="relative flex cursor-pointer items-center justify-between rounded-xl border-2 border-primary/10 bg-white dark:bg-slate-800/50 p-4 transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/5 hover:border-primary/30">
+                                {/* <label className="relative flex cursor-pointer items-center justify-between rounded-xl border-2 border-primary/10 bg-white dark:bg-slate-800/50 p-4 transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/5 hover:border-primary/30">
                                     <div className="flex items-center gap-4">
                                         <div className="flex p-2 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"><span className="material-symbols-outlined">payments</span></div>
                                         <div>
@@ -452,7 +452,7 @@ export const PantallaCheckout = ({ tiendaSlug }) => {
                                 ¡Pedido #{pedidoTransferenciaExito.id} generado!
                             </h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                                Transferí el total para que podamos preparar tu compra y enviártela.
+                                Transferí el total para que podamos preparar tu compra.
                             </p>
 
                             {/* Tarjeta con los datos bancarios */}

@@ -179,7 +179,7 @@ export const Navbar = ({ tiendaSlug }) => {
 
         const temporizador = setTimeout(async () => {
             try {
-                const res = await fetchConToken(`/productos?todos=false&busqueda=${encodeURIComponent(busquedaLocal)}&page=0&size=5`);
+                const res = await fetchConToken(`/productos/publico?tiendaSlug=${encodeURIComponent(slugEfectivo)}&busqueda=${encodeURIComponent(busquedaLocal)}&page=0&size=5`);
                 if (res.ok) {
                     const data = await res.json();
                     setResultadosRapidos(data.content || []);
