@@ -89,4 +89,41 @@ public class UsuarioController {
 
         return ResponseEntity.ok(Map.of("mensaje", "Cliente registrado con éxito"));
     }
+    @GetMapping("/user/me")
+    public ResponseEntity<?> obtenerMiPerfil(@RequestHeader("Authorization") String authHeader) {
+        // Mirá qué limpio queda: el servicio hace todo el trabajo
+        Usuario usuario = authService.obtenerUsuarioDelToken(authHeader);
+        return ResponseEntity.ok(usuario);
+    }
+
+    @PutMapping("/user/me")
+    public ResponseEntity<?> actualizarMiPerfil(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody EditarPerfilDTO dto) {
+        try {
+            Usuario usuario = authService.obtenerUsuarioDelToken(authHeader);
+            service.actualizarPerfil(usuario.getId(), dto);
+
+            return ResponseEntity.ok(Map.of("mensaje", "Perfil actualizado correctamente"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/user/me/password")
+    public ResponseEntity<?> cambiarMiPassword(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody CambiarPasswordDTO dto) {
+        try {
+            Usuario usuario = authService.obtenerUsuarioDelToken(authHeader);
+            service.cambiarPassword(usuario.getId(), dto.getPasswordActual(), dto.getPasswordNueva());
+
+            return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada con éxito"));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("error", "Token inválido o expirado"));
+        }
+    }
 }
